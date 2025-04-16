@@ -1,3 +1,4 @@
+import numpy as np
 import pytesseract as pyt ## OCR
 import cv2 ## Tratamiento de imagenes
 import PIL as pw ## Tratamiento de imagenes
@@ -20,8 +21,10 @@ def seleccionar_archivo():
     if ruta_archivo:
         mostrar_imagen(ruta_archivo)
         escala_grises()
-        # binarizacion()
-        leer_imagen_por_filas()
+        binarizacion()
+        corregir_inclinacion()
+        # recorte_imagen()
+        # leer_imagen_por_filas()
     return ruta_archivo
 
 def mostrar_imagen(ruta):
@@ -73,6 +76,31 @@ def binarizacion():
 
 boton_binarizacion = tk.Button(root, text="Binarizar la imagen", command=binarizacion)
 boton_binarizacion.pack(pady=10)
+
+def corregir_inclinacion():
+    global imagen_recta
+
+     # 3. Encontrar los puntos donde hay texto (o líneas)
+    puntos = np.where(imagen_binarizada == 255)
+    coords = np.column_stack((puntos[1], puntos[0]))  # x, y
+
+    # 4. Aplicar el método RANSAC para encontrar la línea que mejor se ajusta
+    # a los puntos (esto es robusto a los valores atípicos)
+    _, _, w = np.linalg.svd(coords - np.mean(coords, axis=0))
+    vector_inclinacion = w[0]
+    angulo_rad = np.arctan2(vector_inclinacion[1], vector_inclinacion[0])
+    angulo_grados = np.degrees(angulo_rad)
+
+    # 5. Rotar la imagen para corregir la inclinación
+    altura, ancho = imagen_binarizada.shape[:2]
+    centro = (ancho / 2, altura / 2)
+    matriz_rotacion = cv2.getRotationMatrix2D(centro, angulo_grados, 1.0)
+    imagen_recta = cv2.warpAffine(imagen_binarizada, matriz_rotacion, (ancho, altura), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+
+    # 6. Mostrar la imagen corregida
+    mostrar_imagen_cv2("Imagen corregida", imagen_recta)
+    
+    return imagen_recta
 
 def recorte_imagen():
     #TODO
