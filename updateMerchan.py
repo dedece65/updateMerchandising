@@ -20,7 +20,8 @@ def seleccionar_archivo():
     if ruta_archivo:
         mostrar_imagen(ruta_archivo)
         escala_grises()
-        binarizacion()
+        # binarizacion()
+        leer_imagen_por_filas()
     return ruta_archivo
 
 def mostrar_imagen(ruta):
@@ -76,5 +77,42 @@ boton_binarizacion.pack(pady=10)
 def recorte_imagen():
     #TODO
     pass
+
+# Leer la imagen procesada con tesseract
+
+def leer_imagen_por_filas():
+    config = '--psm 6'
+    lang = 'spa'  # Idioma español
+    texto_tesseract = pyt.image_to_string(imagen_grayscale, config=config, lang=lang)
+
+    print("Salida de Tesseract en bruto:\n", texto_tesseract)
+
+    filas = []
+    lineas = texto_tesseract.split('\n')
+
+    for linea in lineas:
+        linea = linea.strip()
+        if not linea:
+            continue
+
+        # Dividir la línea en partes
+        partes = linea.split()
+        # Verificar si la línea tiene al menos 3 partes
+        if len(partes) == 3:
+            # Obtener el nombre del producto y el stock
+            nombre_producto = partes[0]
+            stock = partes[1]
+            fecha = partes[2]
+            filas.append((nombre_producto, stock, fecha)) 
+        elif len(partes) > 3:    
+            nombre_producto = " ".join(partes[:2])
+            stock = partes[2]
+            fecha = partes[3] 
+            filas.append((nombre_producto, stock, fecha))
+    
+    for fila in filas:
+        print(fila)
+
+    return filas
 
 root.mainloop()
