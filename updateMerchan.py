@@ -9,7 +9,7 @@ from PIL import Image, ImageTk ## GUI
 
 ## Creamos la ventana con la opción de seleccionar el archivo
 root = tk.Tk()
-root.geometry("400x200")
+root.geometry("1000x1000")
 root.title("Modificar stock de merchandising")
 
 ## Seleccionamos el archivo y mostramos la imagen
@@ -41,7 +41,7 @@ etiqueta_imagen.pack(pady=10)
 
 def mostrar_imagen_cv2(nombre_ventana, imagen):
     cv2.namedWindow(nombre_ventana, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(nombre_ventana, 600, 600)
+    cv2.resizeWindow(nombre_ventana, 1000, 1000)
     cv2.imshow(nombre_ventana, imagen)
 
 
@@ -52,6 +52,8 @@ def escala_grises():
     imagen_grayscale = cv2.imread(ruta_archivo, cv2.IMREAD_GRAYSCALE)
     mostrar_imagen_cv2("Imagen grayscale", imagen_grayscale)
 
+    print(type(imagen_grayscale))
+
     return imagen_grayscale
 
 boton_escalagrises = tk.Button(root, text="Pasar la imagen a escala de grises", command=escala_grises)
@@ -61,7 +63,8 @@ boton_escalagrises.pack(pady=10)
 
 def binarizacion():
     global imagen_binarizada
-    imagen_binarizada = cv2.threshold(imagen_grayscale, 210, 255, cv2.THRESH_BINARY)
+    print(type(imagen_grayscale))
+    _, imagen_binarizada = cv2.threshold(imagen_grayscale, 140, 255, cv2.THRESH_BINARY)
     mostrar_imagen_cv2("Imagen binarizada", imagen_binarizada)
 
     return imagen_binarizada
