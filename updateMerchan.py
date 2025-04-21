@@ -20,11 +20,7 @@ def seleccionar_archivo():
     ruta_archivo = filedialog.askopenfilename(title="Seleccionar imagen", filetypes=[("Archivos de imagen", "*.jpg;*.jpeg;*.png")])    
     if ruta_archivo:
         mostrar_imagen(ruta_archivo)
-        escala_grises()
-        binarizacion()
-        corregir_inclinacion()
-        # recorte_imagen()
-        # leer_imagen_por_filas()
+        pre_procesar_imagen(ruta_archivo)
     return ruta_archivo
 
 def mostrar_imagen(ruta):
@@ -51,56 +47,31 @@ def mostrar_imagen_cv2(nombre_ventana, imagen):
     cv2.imshow(nombre_ventana, imagen)
 
 
-# Pasamos la imagen a escala de grises
 
-def escala_grises():
-    global imagen_grayscale
-    imagen_grayscale = cv2.imread(ruta_archivo, cv2.IMREAD_GRAYSCALE)
-    mostrar_imagen_cv2("Imagen grayscale", imagen_grayscale)
+def pre_procesar_imagen(ruta):
 
-    return imagen_grayscale
+    global imagen_grayscale, imagen_desenfocada, imagen_binarizada
 
-boton_escalagrises = tk.Button(root, text="Pasar la imagen a escala de grises", command=escala_grises)
-boton_escalagrises.pack(pady=10)
-
-# Pasamos la imagen a binaria (blanco y negro)
-
-def binarizacion():
-    global imagen_binarizada
-
-    # cv2.threshold devuelve 2 valores, con _, imagen_binarizada se deshecha el primer valor y asignamos el segundo a la variable imagen_binarizada
-    _, imagen_binarizada = cv2.threshold(imagen_grayscale, 210, 255, cv2.THRESH_BINARY) 
-    mostrar_imagen_cv2("Imagen binarizada", imagen_binarizada)
+    # Leer la imagen original
+    imagen = cv2.imread(ruta)
+    if imagen is None:
+        print("Error al cargar la imagen.")
+        return
+    
+    # Convertir la imagen a escala de grises
+    imagen_grayscale = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+    
+    # Aplicar un desenfoque gaussiano para reducir el ruido
+    imagen_desenfocada = cv2.GaussianBlur(imagen_grayscale, (5, 5), 0)
+    
+    # Aplicar la binarización adaptativa
+    imagen_binarizada = cv2.adaptiveThreshold(imagen_desenfocada, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+    
+    mostrar_imagen_cv2("Imagen escalada de grises", imagen_grayscale)
+    mostrar_imagen_cv2("Imagen desenfocada", imagen_desenfocada)
+    mostrar_imagen_cv2("Imagen pre-procesada", imagen_binarizada)
 
     return imagen_binarizada
-
-boton_binarizacion = tk.Button(root, text="Binarizar la imagen", command=binarizacion)
-boton_binarizacion.pack(pady=10)
-
-def corregir_inclinacion():
-    global imagen_recta
-
-     # 3. Encontrar los puntos donde hay texto (o líneas)
-    puntos = np.where(imagen_binarizada == 255)
-    coords = np.column_stack((puntos[1], puntos[0]))  # x, y
-
-    # 4. Aplicar el método RANSAC para encontrar la línea que mejor se ajusta
-    # a los puntos (esto es robusto a los valores atípicos)
-    _, _, w = np.linalg.svd(coords - np.mean(coords, axis=0))
-    vector_inclinacion = w[0]
-    angulo_rad = np.arctan2(vector_inclinacion[1], vector_inclinacion[0])
-    angulo_grados = np.degrees(angulo_rad)
-
-    # 5. Rotar la imagen para corregir la inclinación
-    altura, ancho = imagen_binarizada.shape[:2]
-    centro = (ancho / 2, altura / 2)
-    matriz_rotacion = cv2.getRotationMatrix2D(centro, angulo_grados, 1.0)
-    imagen_recta = cv2.warpAffine(imagen_binarizada, matriz_rotacion, (ancho, altura), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
-
-    # 6. Mostrar la imagen corregida
-    mostrar_imagen_cv2("Imagen corregida", imagen_recta)
-    
-    return imagen_recta
 
 def recorte_imagen():
     #TODO
