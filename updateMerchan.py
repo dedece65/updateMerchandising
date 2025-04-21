@@ -67,8 +67,9 @@ def pre_procesar_imagen(ruta):
     # Aplicar la binarización adaptativa
     imagen_binarizada = cv2.adaptiveThreshold(imagen_desenfocada, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
     
-    # mostrar_imagen_cv2("Imagen escalada de grises", imagen_grayscale)
-    # mostrar_imagen_cv2("Imagen desenfocada", imagen_desenfocada)
+    mostrar_imagen_cv2("Imagen escalada de grises", imagen_grayscale)
+    mostrar_imagen_cv2("Imagen desenfocada", imagen_desenfocada)
+    mostrar_imagen_cv2("Imagen binarizada", imagen_binarizada)
     detectar_lineas_horizontales(imagen_binarizada)
 
     return imagen_binarizada
@@ -104,7 +105,7 @@ def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longit
                 lineas_horizontales.append((y1, min(x1, x2), max(x1, x2)))
 
     lineas_horizontales.sort(key=lambda x: x[0])  # Ordenar por 'y'
-
+    
     lineas_unidas = []
     if lineas_horizontales:
         linea_actual_y = lineas_horizontales[0][0]
@@ -128,14 +129,14 @@ def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longit
             lineas_unidas.append((x_min_actual, linea_actual_y, x_max_actual))
 
     # Visualizar las líneas unidas y filtradas
-    """ imagen_con_lineas = cv2.cvtColor(imagen_binarizada.copy(), cv2.COLOR_GRAY2BGR)
+    imagen_con_lineas = cv2.cvtColor(imagen_binarizada.copy(), cv2.COLOR_GRAY2BGR)
     for x_inicial, y, x_final in lineas_unidas:
         cv2.line(imagen_con_lineas, (x_inicial, y), (x_final, y), (0, 0, 255), 2)
     
-    mostrar_imagen_cv2("Imagen preprocesada", imagen_con_lineas) """
+    mostrar_imagen_cv2("Imagen preprocesada", imagen_con_lineas)
     print(f"Se encontraron {len(lineas_unidas)} líneas horizontales unidas y filtradas.")
 
-    segmentar_imagenes(imagen_binarizada, lineas_unidas)
+    # segmentar_imagenes(imagen_binarizada, lineas_unidas)
 
     return lineas_unidas
 
@@ -209,9 +210,9 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
             y_superior_anterior = y_inferior
 
     # La última fila estará desde la última línea hasta el borde inferior de la imagen
-    if y_superior_anterior < imagen_binarizada.shape[0]:
+    """ if y_superior_anterior < imagen_binarizada.shape[0]:
         fila = imagen_binarizada[y_superior_anterior:imagen_binarizada.shape[0], :]
-        filas_segmentadas.append(fila)
+        filas_segmentadas.append(fila) """
 
     print(f"Se segmentaron {len(filas_segmentadas)} filas de la imagen.")
     for fila in filas_segmentadas:
