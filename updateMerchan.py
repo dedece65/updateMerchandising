@@ -21,6 +21,17 @@ def seleccionar_archivo():
     if ruta_archivo:
         mostrar_imagen(ruta_archivo)
         pre_procesar_imagen(ruta_archivo)
+        detectar_lineas_horizontales(imagen_binarizada)
+        
+        lineas_horizontales = detectar_lineas_horizontales(imagen_binarizada)
+
+        imagen_con_lineas = cv2.cvtColor(imagen_binarizada, cv2.COLOR_GRAY2BGR)
+        for x1, y1, x2, y2 in lineas_horizontales:
+            cv2.line(imagen_con_lineas, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+        print(f"Se encontraron {len(lineas_horizontales)} líneas horizontales.")
+        mostrar_imagen_cv2("Líneas horizontales detectadas", imagen_con_lineas)
+
     return ruta_archivo
 
 def mostrar_imagen(ruta):
@@ -73,9 +84,27 @@ def pre_procesar_imagen(ruta):
 
     return imagen_binarizada
 
-def recorte_imagen():
-    #TODO
-    pass
+def detectar_lineas_horizontales(imagen_binarizada):
+    global lineas_horizontales
+    """
+    Detecta líneas horizontales en una imagen binarizada usando la Transformada de Hough Probabilística.
+
+    Args:
+        imagen_binarizada: Imagen binarizada (blanco sobre negro).
+
+    Returns:
+        Una lista de líneas horizontales detectadas, donde cada línea es una tupla (x1, y1, x2, y2).
+    """
+    lineas = cv2.HoughLinesP(imagen_binarizada, rho=1, theta=np.pi/180, threshold=100, minLineLength=500, maxLineGap=20)
+    lineas_horizontales = []
+    if lineas is not None:
+        for linea in lineas:
+            x1, y1, x2, y2 = linea[0]
+            # Consideramos como horizontal si la diferencia en 'y' es pequeña
+            if abs(y1 - y2) < 10:
+                lineas_horizontales.append((x1, y1, x2, y2))
+    return lineas_horizontales
+
 
 # Leer la imagen procesada con tesseract
 
