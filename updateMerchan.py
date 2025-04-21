@@ -19,7 +19,6 @@ def seleccionar_archivo():
     ruta_archivo = filedialog.askopenfilename(title="Seleccionar imagen", filetypes=[("Archivos de imagen", "*.jpg;*.jpeg;*.png")])    
     if ruta_archivo:
         pre_procesar_imagen(ruta_archivo)
-        
 
     return ruta_archivo
 
@@ -129,12 +128,14 @@ def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longit
             lineas_unidas.append((x_min_actual, linea_actual_y, x_max_actual))
 
     # Visualizar las líneas unidas y filtradas
-    imagen_con_lineas = cv2.cvtColor(imagen_binarizada.copy(), cv2.COLOR_GRAY2BGR)
+    """ imagen_con_lineas = cv2.cvtColor(imagen_binarizada.copy(), cv2.COLOR_GRAY2BGR)
     for x_inicial, y, x_final in lineas_unidas:
         cv2.line(imagen_con_lineas, (x_inicial, y), (x_final, y), (0, 0, 255), 2)
     
-    mostrar_imagen_cv2("Imagen preprocesada", imagen_con_lineas)
+    mostrar_imagen_cv2("Imagen preprocesada", imagen_con_lineas) """
     print(f"Se encontraron {len(lineas_unidas)} líneas horizontales unidas y filtradas.")
+
+    segmentar_imagenes(imagen_binarizada, lineas_unidas)
 
     return lineas_unidas
 
@@ -173,5 +174,50 @@ def leer_imagen_por_filas():
         print(fila)
 
     return filas
+
+def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
+
+    """
+    Segmenta la imagen en partes utilizando las líneas horizontales detectadas.
+
+    Args:
+        imagen_binarizada: Imagen binarizada
+        lineas_horizontales: Lista de líneas horizontales detectadas.
+    
+    Returns:
+        Una lista de imágenes segmentadas.
+    """
+
+    filas_segmentadas = []
+    if not lineas_horizontales:
+        return filas_segmentadas
+
+    # Extraer las coordenadas 'y' únicas y ordenarlas
+    coordenadas_y = sorted(list(set([int(y) for _, y, _ in lineas_horizontales])))
+
+    # Asegurarse de tener al menos dos coordenadas 'y' para delimitar filas
+    if len(coordenadas_y) < 2:
+        return filas_segmentadas
+
+    # La primera fila estará desde el borde superior de la imagen hasta la primera línea
+    y_superior_anterior = coordenadas_y[0]
+    for y_inferior in coordenadas_y[1:]:  # Comenzar desde el segundo valor
+        # Asegurarse de que la diferencia vertical sea positiva
+        if y_inferior > y_superior_anterior:
+            fila = imagen_binarizada[y_superior_anterior:y_inferior, :]
+            filas_segmentadas.append(fila)
+            y_superior_anterior = y_inferior
+
+    # La última fila estará desde la última línea hasta el borde inferior de la imagen
+    if y_superior_anterior < imagen_binarizada.shape[0]:
+        fila = imagen_binarizada[y_superior_anterior:imagen_binarizada.shape[0], :]
+        filas_segmentadas.append(fila)
+
+    print(f"Se segmentaron {len(filas_segmentadas)} filas de la imagen.")
+    for fila in filas_segmentadas:
+        cv2.imshow("Fila segmentada", fila)
+        cv2.waitKey(0)
+
+    return filas_segmentadas
 
 root.mainloop()
