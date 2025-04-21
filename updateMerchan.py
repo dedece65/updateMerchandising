@@ -78,15 +78,22 @@ def pre_procesar_imagen(ruta):
 # Devuelve una lista de líneas horizontales con formato (x1, y, x2)
 def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longitud_minima=1800):
     global lineas_horizontales
+    
     """
     Detecta líneas horizontales en una imagen binarizada usando la Transformada de Hough Probabilística.
 
     Args:
         imagen_binarizada: Imagen binarizada (blanco sobre negro).
+        umbral_y_cercania: Si 2 lineas estan a menos de este umbral se unen
+        longitud_minima: Longitud minima para que una línea se devuelva.
+            - hay un problema aquí y es que cuando el móvil escanea un folio las líneas parecen tener una longitud mínima bastante distinta.
+            - creo que la solución puede estar en escanearlo con una impresora y definir umbrales y longitudes correctos
+        TODO: corregir bug longitud minima
 
     Returns:
         Una lista de líneas horizontales detectadas, donde cada línea es una tupla (x1, y1, x2, y2).
     """
+
     lineas = cv2.HoughLinesP(imagen_binarizada, rho=1, theta=np.pi/180, threshold=100, minLineLength=50, maxLineGap=20)
 
     altura = imagen_binarizada.shape[0]
