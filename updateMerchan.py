@@ -15,17 +15,20 @@ root.title("Modificar stock de merchandising")
 
 ## Seleccionamos el archivo y mostramos la imagen
 
+
 def seleccionar_archivo():
     global ruta_archivo
-    ruta_archivo = filedialog.askopenfilename(title="Seleccionar archivo", filetypes=[("Archivos de imagen", "*.jpg;*.jpeg;*.png;*.pdf")])    
-    if ruta_archivo and ruta_archivo.endswith('.pdf'):
-        pages = pdf2image.convert_from_path(ruta_archivo)
-        for page in pages:
-            page.save("imagen.jpg", "JPG")
-        pre_procesar_imagen("imagen.jpg")
-    else:
-        pre_procesar_imagen(ruta_archivo)
-
+    ruta_archivo = "temp_image.jpg"
+    # ruta_archivo = filedialog.askopenfilename(title="Seleccionar archivo", filetypes=[("Archivos de imagen", "*.jpg;*.jpeg;*.png;*.pdf")])    
+    # if ruta_archivo:
+    #     image = pdf2image.convert_from_path(ruta_archivo, dpi=300)
+    #     for image in image:
+    #         # Convertir la imagen a un formato compatible con PIL
+    #         image = image.convert("RGB")
+    #         # Guardar la imagen en un archivo temporal
+    #         ruta_archivo = "temp_image.jpg"
+    #         image.save(ruta_archivo, "JPEG")
+    pre_procesar_imagen(ruta_archivo)
     return ruta_archivo
 
 def mostrar_imagen(ruta):
@@ -73,11 +76,9 @@ def pre_procesar_imagen(ruta):
     # Aplicar la binarización adaptativa
     imagen_binarizada = cv2.adaptiveThreshold(imagen_desenfocada, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
     
-    # gray = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
-    # edges = cv2.Canny(gray, 50, 150, apertureSize=3)
-
-    # mostrar_imagen_cv2("bordes", edges)
-    # mostrar_imagen_cv2("imagen", imagen)
+    # mostrar_imagen_cv2("imagen grayscale", imagen_grayscale)
+    # mostrar_imagen_cv2("imagen desenfocada", imagen_desenfocada)
+    # mostrar_imagen_cv2("imagen binarizada", imagen_binarizada)
 
     detectar_lineas_horizontales(imagen_binarizada)
 
@@ -85,7 +86,7 @@ def pre_procesar_imagen(ruta):
 
 # Detectar líneas horizontales en la imagen binarizada
 # Devuelve una lista de líneas horizontales con formato (x1, y, x2)
-def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longitud_minima=900):
+def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longitud_minima=2000):
     global lineas_horizontales
     
     """
@@ -147,50 +148,54 @@ def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longit
     # Visualizar las líneas unidas y filtradas
     imagen_con_lineas = cv2.cvtColor(imagen_binarizada.copy(), cv2.COLOR_GRAY2BGR)
     for x_inicial, y, x_final in lineas_unidas:
-        cv2.line(imagen_con_lineas, (x_inicial, y), (x_final, y), (0, 0, 255), 2)
+        cv2.line(imagen_con_lineas, (x_inicial, y), (x_final, y), (0, 0, 255), 2, cv2.LINE_AA)
     
     mostrar_imagen_cv2("Imagen preprocesada", imagen_con_lineas)
     print(f"Se encontraron {len(lineas_unidas)} líneas horizontales unidas y filtradas.")
 
-    # segmentar_imagenes(imagen_binarizada, lineas_unidas)
+    # segmentar_imagenes(imagen_grayscale, lineas_unidas)   
 
     return lineas_unidas
 
 # Leer la imagen procesada con tesseract
-def leer_imagen_por_filas():
-    config = '--psm 6'
+def leer_imagen_por_filas(fila):
+    config = '--psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúñÑÁÉÍÓÚ/'  # Configuración de Tesseract
     lang = 'spa'  # Idioma español
-    texto_tesseract = pyt.image_to_string(imagen_grayscale, config=config, lang=lang)
+    texto_tesseract = pyt.image_to_string(fila, config=config, lang=lang)
+
+    # Guardar el DataFrame en un archivo CSV
+    # texto_tesseract.to_csv('output_tesseract.csv', index=False, encoding='utf-8')
+    # print("Datos guardados en 'output_tesseract.csv'")
 
     print("Salida de Tesseract en bruto:\n", texto_tesseract)
 
-    filas = []
-    lineas = texto_tesseract.split('\n')
+    # filas = []
+    # lineas = texto_tesseract.split('\n')
 
-    for linea in lineas:
-        linea = linea.strip()
-        if not linea:
-            continue
+    # for linea in lineas:
+    #     linea = linea.strip()
+    #     if not linea:
+    #         continue
 
-        # Dividir la línea en partes
-        partes = linea.split()
-        # Verificar si la línea tiene al menos 3 partes
-        if len(partes) == 3:
-            # Obtener el nombre del producto y el stock
-            nombre_producto = partes[0]
-            stock = partes[1]
-            fecha = partes[2]
-            filas.append((nombre_producto, stock, fecha)) 
-        elif len(partes) > 3:    
-            nombre_producto = " ".join(partes[:2])
-            stock = partes[2]
-            fecha = partes[3] 
-            filas.append((nombre_producto, stock, fecha))
+    #     # Dividir la línea en partes
+    #     partes = linea.split()
+    #     # Verificar si la línea tiene al menos 3 partes
+    #     if len(partes) == 3:
+    #         # Obtener el nombre del producto y el stock
+    #         nombre_producto = partes[0]
+    #         stock = partes[1]
+    #         fecha = partes[2]
+    #         filas.append((nombre_producto, stock, fecha)) 
+    #     elif len(partes) > 3:    
+    #         nombre_producto = " ".join(partes[:2])
+    #         stock = partes[2]
+    #         fecha = partes[3] 
+    #         filas.append((nombre_producto, stock, fecha))
     
-    for fila in filas:
-        print(fila)
+    # for fila in filas:
+    #     print(fila)
 
-    return filas
+    return texto_tesseract
 
 def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
 
@@ -232,6 +237,7 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
 
     print(f"Se segmentaron {len(filas_segmentadas)} filas de la imagen.")
     for fila in filas_segmentadas:
+        leer_imagen_por_filas(fila)
         cv2.imshow("Fila segmentada", fila)
         cv2.waitKey(0)
 
