@@ -18,7 +18,7 @@ root.title("Modificar stock de merchandising")
 
 def seleccionar_archivo():
     global ruta_archivo
-    ruta_archivo = "temp_image.jpg"
+    ruta_archivo = "./assets/pagina1.jpg"
     # ruta_archivo = filedialog.askopenfilename(title="Seleccionar archivo", filetypes=[("Archivos de imagen", "*.jpg;*.jpeg;*.png;*.pdf")])    
     # if ruta_archivo:
     #     image = pdf2image.convert_from_path(ruta_archivo, dpi=300)
