@@ -3,6 +3,7 @@ import pytesseract as pyt ## OCR
 import cv2 ## Tratamiento de imagenes
 import PIL as pw ## Tratamiento de imagenes
 import tkinter as tk ## GUI
+import pdf2image
 
 from tkinter import filedialog ## GUI
 from PIL import Image, ImageTk ## GUI
@@ -16,8 +17,13 @@ root.title("Modificar stock de merchandising")
 
 def seleccionar_archivo():
     global ruta_archivo
-    ruta_archivo = filedialog.askopenfilename(title="Seleccionar imagen", filetypes=[("Archivos de imagen", "*.jpg;*.jpeg;*.png")])    
-    if ruta_archivo:
+    ruta_archivo = filedialog.askopenfilename(title="Seleccionar archivo", filetypes=[("Archivos de imagen", "*.jpg;*.jpeg;*.png;*.pdf")])    
+    if ruta_archivo and ruta_archivo.endswith('.pdf'):
+        pages = pdf2image.convert_from_path(ruta_archivo)
+        for page in pages:
+            page.save("imagen.jpg", "JPG")
+        pre_procesar_imagen("imagen.jpg")
+    else:
         pre_procesar_imagen(ruta_archivo)
 
     return ruta_archivo
@@ -67,16 +73,19 @@ def pre_procesar_imagen(ruta):
     # Aplicar la binarización adaptativa
     imagen_binarizada = cv2.adaptiveThreshold(imagen_desenfocada, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
     
-    mostrar_imagen_cv2("Imagen escalada de grises", imagen_grayscale)
-    mostrar_imagen_cv2("Imagen desenfocada", imagen_desenfocada)
-    mostrar_imagen_cv2("Imagen binarizada", imagen_binarizada)
+    # gray = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+    # edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+
+    # mostrar_imagen_cv2("bordes", edges)
+    # mostrar_imagen_cv2("imagen", imagen)
+
     detectar_lineas_horizontales(imagen_binarizada)
 
     return imagen_binarizada
 
 # Detectar líneas horizontales en la imagen binarizada
 # Devuelve una lista de líneas horizontales con formato (x1, y, x2)
-def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longitud_minima=1800):
+def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longitud_minima=900):
     global lineas_horizontales
     
     """
@@ -88,7 +97,7 @@ def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longit
         longitud_minima: Longitud minima para que una línea se devuelva.
             - hay un problema aquí y es que cuando el móvil escanea un folio las líneas parecen tener una longitud mínima bastante distinta.
             - creo que la solución puede estar en escanearlo con una impresora y definir umbrales y longitudes correctos
-        TODO: corregir bug longitud minima
+        TODO: corregir bug longitud minima  
 
     Returns:
         Una lista de líneas horizontales detectadas, donde cada línea es una tupla (x1, y1, x2, y2).
@@ -105,14 +114,14 @@ def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longit
     lineas_horizontales = []
     for linea in lineas:
         x1, y1, x2, y2 = linea[0]
-        if abs(y1 - y2) < 10:
+        if abs(y1 - y2) < umbral_y_cercania:
             # Guardamos las líneas como (y, x_inicial, x_final) para facilitar la unión
             if y1 > margen and y1 < (altura - margen) and \
                y2 > margen and y2 < (altura - margen):
                 lineas_horizontales.append((y1, min(x1, x2), max(x1, x2)))
 
     lineas_horizontales.sort(key=lambda x: x[0])  # Ordenar por 'y'
-    
+
     lineas_unidas = []
     if lineas_horizontales:
         linea_actual_y = lineas_horizontales[0][0]
