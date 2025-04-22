@@ -45,9 +45,6 @@ def mostrar_imagen(ruta):
 
 boton_seleccionar = tk.Button(root, text="Seleccionar imagen", command=seleccionar_archivo)
 boton_seleccionar.pack(pady=10) 
-                                                                           
-etiqueta_imagen = tk.Label(root, text="No se ha seleccionado ninguna imagen")
-etiqueta_imagen.pack(pady=10)
 
 # Inicializar variables globales para almacenar imágenes y líneas
 def mostrar_imagen_cv2(nombre_ventana, imagen):
@@ -76,10 +73,6 @@ def pre_procesar_imagen(ruta):
     # Aplicar la binarización adaptativa
     imagen_binarizada = cv2.adaptiveThreshold(imagen_desenfocada, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
     
-    # mostrar_imagen_cv2("imagen grayscale", imagen_grayscale)
-    # mostrar_imagen_cv2("imagen desenfocada", imagen_desenfocada)
-    # mostrar_imagen_cv2("imagen binarizada", imagen_binarizada)
-
     detectar_lineas_horizontales(imagen_binarizada)
 
     return imagen_binarizada
@@ -229,11 +222,6 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
             fila = imagen_binarizada[y_superior_anterior:y_inferior, :]
             filas_segmentadas.append(fila)
             y_superior_anterior = y_inferior
-
-    # La última fila estará desde la última línea hasta el borde inferior de la imagen
-    """ if y_superior_anterior < imagen_binarizada.shape[0]:
-        fila = imagen_binarizada[y_superior_anterior:imagen_binarizada.shape[0], :]
-        filas_segmentadas.append(fila) """
 
     print(f"Se segmentaron {len(filas_segmentadas)} filas de la imagen.")
     for fila in filas_segmentadas:
