@@ -127,10 +127,9 @@ def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longit
     for x_inicial, y, x_final in lineas_unidas:
         cv2.line(imagen_con_lineas, (x_inicial, y), (x_final, y), (0, 0, 255), 2, cv2.LINE_AA)
     
-    mostrar_imagen("Imagen preprocesada", imagen_con_lineas)
     print(f"Se encontraron {len(lineas_unidas)} líneas horizontales unidas y filtradas.")
 
-    segmentar_imagenes(imagen_grayscale, lineas_unidas)   
+    segmentar_imagenes(imagen_binarizada, lineas_unidas)   
 
     return lineas_unidas
 
@@ -193,8 +192,9 @@ def detectar_lineas_verticales(imagen_binarizada, umbral_x_cercanía=10, longitu
     for x, y_inicial, y_final in lineas_unidas:
         cv2.line(imagen_con_lineas, (x, y_inicial), (x, y_final), (255, 0, 0), 2, cv2.LINE_AA)
     
-    mostrar_imagen("Líneas verticales detectadas", imagen_con_lineas)
     print(f"Se encontraron {len(lineas_unidas)} líneas verticales unidas y filtradas.")
+
+    segmentar_casillas(imagen_binarizada, lineas_unidas)
 
     return lineas_unidas
 
@@ -238,6 +238,68 @@ def leer_imagen_por_filas(fila):
 
     return texto_tesseract
 
+def segmentar_casillas(imagen_binarizada, lineas_verticales):
+    """
+    Segmenta la imagen en partes utilizando las líneas verticales detectadas.
+
+    Args:
+        imagen_binarizada: Imagen binarizada
+        lineas_verticales: Lista de líneas verticales detectadas.
+    
+    Returns:
+        Una lista de imágenes segmentadas.
+    """
+
+    columnas_segmentadas = []
+    if not lineas_verticales:
+        return columnas_segmentadas
+
+    # Extraer las coordenadas 'x' únicas y ordenarlas
+    coordenadas_x = sorted(list(set([int(x) for x, _, _ in lineas_verticales])))
+
+    # Si sólo hay una línea vertical, segmentar la imagen en dos partes
+    if len(coordenadas_x) == 1:
+        x = coordenadas_x[0]
+        columna_izquierda = imagen_binarizada[:, :x]
+        columna_derecha = imagen_binarizada[:, x:]
+        if columna_izquierda.shape[1] > 0:
+            columnas_segmentadas.append(columna_izquierda)
+        if columna_derecha.shape[1] > 0:
+            columnas_segmentadas.append(columna_derecha)
+        return columnas_segmentadas
+
+    # La primera columna estará desde el borde izquierdo de la imagen hasta la primera línea
+    x_inicial_anterior = 0
+    x_final_primera = coordenadas_x[0]
+
+    if x_final_primera > x_inicial_anterior:
+        columna = imagen_binarizada[:, x_inicial_anterior:x_final_primera]
+        columnas_segmentadas.append(columna)
+        x_inicial_anterior = x_final_primera
+
+    for x_final in coordenadas_x[1:]:  # Comenzar desde el segundo valor
+        # Asegurarse de que la diferencia horizontal sea positiva
+        if x_final > x_inicial_anterior:
+            columna = imagen_binarizada[:, x_inicial_anterior:x_final]
+            columnas_segmentadas.append(columna)
+            x_inicial_anterior = x_final
+
+    if coordenadas_x:
+        x_inicial_ultima = coordenadas_x[-1]
+        columna_derecha = imagen_binarizada[:, x_inicial_ultima:imagen_binarizada.shape[1]]
+        if columna_derecha.shape[1] > 0:
+            columnas_segmentadas.append(columna_derecha)
+
+
+    for i in range(0, len(columnas_segmentadas)):
+        save_path = f"columna_segmentada{i}.jpg"
+        cv2.imwrite(save_path, columnas_segmentadas[i])
+        mostrar_imagen("Columna Segmentada", columnas_segmentadas[i])
+
+    print(f"Se segmentaron {len(columnas_segmentadas)} columnas de la imagen.")
+    
+    return columnas_segmentadas
+
 def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
 
     """
@@ -270,15 +332,11 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
             fila = imagen_binarizada[y_superior_anterior:y_inferior, :]
             filas_segmentadas.append(fila)
             y_superior_anterior = y_inferior
-    
-    cv2.imshow("Imagen segmentada", imagen_binarizada)
 
-    print(f"Se segmentaron {len(filas_segmentadas)} filas de la imagen.")
-    for fila in filas_segmentadas:
-        # leer_imagen_por_filas(fila)
-        detectar_lineas_verticales(fila)
-        # cv2.imshow("Fila segmentada", fila)
-        # cv2.waitKey(0)
+    # for i in range(1, len(filas_segmentadas)):
+    #     detectar_lineas_verticales(filas_segmentadas[i])
+
+    detectar_lineas_verticales(filas_segmentadas[1])
 
     return filas_segmentadas
 
