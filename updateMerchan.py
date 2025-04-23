@@ -5,7 +5,6 @@ import PIL as pw ## Tratamiento de imagenes
 import tkinter as tk ## GUI
 import pdf2image
 
-from tkinter import filedialog ## GUI
 from PIL import Image, ImageTk ## GUI
 
 ## Creamos la ventana con la opción de seleccionar el archivo
@@ -31,23 +30,11 @@ def seleccionar_archivo():
     pre_procesar_imagen(ruta_archivo)
     return ruta_archivo
 
-def mostrar_imagen(ruta):
-    try:
-        imagen = Image.open(ruta)
-        imagen.thumbnail((600, 600)) 
-        imagen_tk = ImageTk.PhotoImage(imagen)
-        etiqueta_imagen.config(image=imagen_tk)
-        etiqueta_imagen.image = imagen_tk 
-    except FileNotFoundError:
-        etiqueta_imagen.config(text="No se encontró la imagen")
-    except Exception as e:
-        etiqueta_imagen.config(text=f"Error al abrir la imagen: {e}")
-
 boton_seleccionar = tk.Button(root, text="Seleccionar imagen", command=seleccionar_archivo)
 boton_seleccionar.pack(pady=10) 
 
 # Inicializar variables globales para almacenar imágenes y líneas
-def mostrar_imagen_cv2(nombre_ventana, imagen):
+def mostrar_imagen(nombre_ventana, imagen):
     cv2.namedWindow(nombre_ventana, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(nombre_ventana, 1000, 1000)
     cv2.imshow(nombre_ventana, imagen)
@@ -89,12 +76,9 @@ def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longit
         imagen_binarizada: Imagen binarizada (blanco sobre negro).
         umbral_y_cercania: Si 2 lineas estan a menos de este umbral se unen
         longitud_minima: Longitud minima para que una línea se devuelva.
-            - hay un problema aquí y es que cuando el móvil escanea un folio las líneas parecen tener una longitud mínima bastante distinta.
-            - creo que la solución puede estar en escanearlo con una impresora y definir umbrales y longitudes correctos
-        TODO: corregir bug longitud minima  
 
     Returns:
-        Una lista de líneas horizontales detectadas, donde cada línea es una tupla (x1, y1, x2, y2).
+        Una lista de líneas horizontales detectadas, donde cada línea es una tupla (y1, x1, x2).
     """
 
     lineas = cv2.HoughLinesP(imagen_binarizada, rho=1, theta=np.pi/180, threshold=100, minLineLength=50, maxLineGap=20)
@@ -143,10 +127,74 @@ def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longit
     for x_inicial, y, x_final in lineas_unidas:
         cv2.line(imagen_con_lineas, (x_inicial, y), (x_final, y), (0, 0, 255), 2, cv2.LINE_AA)
     
-    mostrar_imagen_cv2("Imagen preprocesada", imagen_con_lineas)
+    mostrar_imagen("Imagen preprocesada", imagen_con_lineas)
     print(f"Se encontraron {len(lineas_unidas)} líneas horizontales unidas y filtradas.")
 
-    # segmentar_imagenes(imagen_grayscale, lineas_unidas)   
+    segmentar_imagenes(imagen_grayscale, lineas_unidas)   
+
+    return lineas_unidas
+
+def detectar_lineas_verticales(imagen_binarizada, umbral_x_cercanía=10, longitud_minima=20):
+    """
+    Detecta líneas verticales en una imagen binarizada usando la Transformada de Hough Probabilística.
+
+    Args:
+        imagen_binarizada: Imagen binarizada
+        umbral_x_cercania: Si 2 lineas estan a menos de este umbral se unen
+        longitud_minima: Longitud minima para que una línea se devuelva.
+    
+    Returns:
+        Una lista de líneas verticales detectadas, donde cada línea es una tupla (x1, y1, y2).
+    """
+
+    lineas = cv2.HoughLinesP(imagen_binarizada, rho=1, theta=np.pi/180, threshold=100, minLineLength=longitud_minima // 2, maxLineGap=20)
+
+    ancho = imagen_binarizada.shape[1]
+    margen = int(ancho * 0.1)
+
+    if lineas is None:
+        return []
+
+    lineas_verticales = []
+    for linea in lineas:
+        x1, y1, x2, y2 = linea[0]
+        if abs(x1 - x2) < umbral_x_cercanía:
+            # Guardamos las líneas como (x, y_inicial, y_final) para facilitar la unión
+            if x1 > margen and x1 < (ancho - margen) and \
+               x2 > margen and x2 < (ancho - margen):
+                lineas_verticales.append((x1, min(y1, y2), max(y1, y2)))
+
+    lineas_verticales.sort(key=lambda x: x[0])  # Ordenar por 'x'
+
+    lineas_unidas = []
+    if lineas_verticales:
+        linea_actual_x = lineas_verticales[0][0]
+        y_min_actual = lineas_verticales[0][1]
+        y_max_actual = lineas_verticales[0][2]
+
+        for i in range(1, len(lineas_verticales)):
+            x, y_min, y_max = lineas_verticales[i]
+            if abs(x - linea_actual_x) < umbral_x_cercanía:
+                y_min_actual = min(y_min_actual, y_min)
+                y_max_actual = max(y_max_actual, y_max)
+            else:
+                if (y_max_actual - y_min_actual) >= longitud_minima:
+                    lineas_unidas.append((linea_actual_x, y_min_actual, y_max_actual))
+                linea_actual_x = x
+                y_min_actual = y_min
+                y_max_actual = y_max
+
+        # Añadir la última línea unida (si cumple la longitud mínima)
+        if (y_max_actual - y_min_actual) >= longitud_minima:
+            lineas_unidas.append((linea_actual_x, y_min_actual, y_max_actual))
+
+    # Visualizar las líneas unidas y filtradas
+    imagen_con_lineas = cv2.cvtColor(imagen_binarizada.copy(), cv2.COLOR_GRAY2BGR)
+    for x, y_inicial, y_final in lineas_unidas:
+        cv2.line(imagen_con_lineas, (x, y_inicial), (x, y_final), (255, 0, 0), 2, cv2.LINE_AA)
+    
+    mostrar_imagen("Líneas verticales detectadas", imagen_con_lineas)
+    print(f"Se encontraron {len(lineas_unidas)} líneas verticales unidas y filtradas.")
 
     return lineas_unidas
 
@@ -222,12 +270,15 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
             fila = imagen_binarizada[y_superior_anterior:y_inferior, :]
             filas_segmentadas.append(fila)
             y_superior_anterior = y_inferior
+    
+    cv2.imshow("Imagen segmentada", imagen_binarizada)
 
     print(f"Se segmentaron {len(filas_segmentadas)} filas de la imagen.")
     for fila in filas_segmentadas:
-        leer_imagen_por_filas(fila)
-        cv2.imshow("Fila segmentada", fila)
-        cv2.waitKey(0)
+        # leer_imagen_por_filas(fila)
+        detectar_lineas_verticales(fila)
+        # cv2.imshow("Fila segmentada", fila)
+        # cv2.waitKey(0)
 
     return filas_segmentadas
 
