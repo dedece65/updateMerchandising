@@ -4,6 +4,7 @@ import cv2 ## Tratamiento de imagenes
 import PIL as pw ## Tratamiento de imagenes
 import tkinter as tk ## GUI
 import pdf2image
+import keras_ocr
 
 from PIL import Image, ImageTk ## GUI
 
@@ -12,9 +13,7 @@ root = tk.Tk()
 root.geometry("1000x1000")
 root.title("Modificar stock de merchandising")
 
-## Seleccionamos el archivo y mostramos la imagen
-
-
+## Seleccionamos el archivo
 def seleccionar_archivo():
     global ruta_archivo
     ruta_archivo = "./assets/pagina1.jpg"
@@ -199,44 +198,21 @@ def detectar_lineas_verticales(imagen_binarizada, umbral_x_cercanía=10, longitu
     return lineas_unidas
 
 # Leer la imagen procesada con tesseract
-def leer_imagen_por_filas(fila):
-    config = '--psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúñÑÁÉÍÓÚ/'  # Configuración de Tesseract
-    lang = 'spa'  # Idioma español
-    texto_tesseract = pyt.image_to_string(fila, config=config, lang=lang)
+def leer_imagen_por_filas(imagenes):
+    # lang = 'spa' 
+    # texto_tesseract = pyt.image_to_string(fila, config=config, lang=lang)
 
-    # Guardar el DataFrame en un archivo CSV
-    # texto_tesseract.to_csv('output_tesseract.csv', index=False, encoding='utf-8')
-    # print("Datos guardados en 'output_tesseract.csv'")
 
-    print("Salida de Tesseract en bruto:\n", texto_tesseract)
+    pipeline = keras_ocr.pipeline.Pipeline()
+    predictions = pipeline.recognize(imagenes)
 
-    # filas = []
-    # lineas = texto_tesseract.split('\n')
+    for image, prediction in zip(imagenes, predictions):
+        keras_ocr.tools.drawAnnotations(image=image, predictions=prediction)
 
-    # for linea in lineas:
-    #     linea = linea.strip()
-    #     if not linea:
-    #         continue
+    # print ("\nConfiguración de Tesseract: ", config)
+    # print("Salida de Tesseract en bruto:\n", texto_tesseract)
 
-    #     # Dividir la línea en partes
-    #     partes = linea.split()
-    #     # Verificar si la línea tiene al menos 3 partes
-    #     if len(partes) == 3:
-    #         # Obtener el nombre del producto y el stock
-    #         nombre_producto = partes[0]
-    #         stock = partes[1]
-    #         fecha = partes[2]
-    #         filas.append((nombre_producto, stock, fecha)) 
-    #     elif len(partes) > 3:    
-    #         nombre_producto = " ".join(partes[:2])
-    #         stock = partes[2]
-    #         fecha = partes[3] 
-    #         filas.append((nombre_producto, stock, fecha))
-    
-    # for fila in filas:
-    #     print(fila)
-
-    return texto_tesseract
+    # return texto_tesseract
 
 def segmentar_casillas(imagen_binarizada, lineas_verticales):
     """
@@ -290,11 +266,17 @@ def segmentar_casillas(imagen_binarizada, lineas_verticales):
         if columna_derecha.shape[1] > 0:
             columnas_segmentadas.append(columna_derecha)
 
+    # config = [
+    #     '--psm 6 -c tessedit_char_whitelist= abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZáéíóúüñÑÁÉÍÓÚ',
+    #     '--psm 6 -c tessedit_char_whitelist= SMLX',
+    #     '--psm 7 -c tessedit_char_whitelist= 0123456789',
+    #     '--psm 7 -c tessedit_char_whitelist= 0123456789/',
+    # ]
 
-    for i in range(0, len(columnas_segmentadas)):
-        save_path = f"columna_segmentada{i}.jpg"
-        cv2.imwrite(save_path, columnas_segmentadas[i])
-        mostrar_imagen("Columna Segmentada", columnas_segmentadas[i])
+    leer_imagen_por_filas(columnas_segmentadas)
+
+    # for i in range(0, len(columnas_segmentadas)):
+    #     leer_imagen_por_filas(columnas_segmentadas[i], config[i])
 
     print(f"Se segmentaron {len(columnas_segmentadas)} columnas de la imagen.")
     
