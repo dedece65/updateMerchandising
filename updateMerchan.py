@@ -198,16 +198,21 @@ def detectar_lineas_verticales(imagen_binarizada, umbral_x_cercanía=10, longitu
     return lineas_unidas
 
 # Leer la imagen procesada con tesseract
-def leer_imagen_por_filas(imagenes):
+def leer_imagen_por_filas(images):
     # lang = 'spa' 
     # texto_tesseract = pyt.image_to_string(fila, config=config, lang=lang)
 
-
+    imagenes = []
     pipeline = keras_ocr.pipeline.Pipeline()
+
+    for image in images:
+        imagen = keras_ocr.tools.read(image)
+        imagenes.append(imagen)
+
     predictions = pipeline.recognize(imagenes)
 
     for image, prediction in zip(imagenes, predictions):
-        keras_ocr.tools.drawAnnotations(image=image, predictions=prediction)
+        print(f"Predicciones para la imagen: {image}, {prediction}")
 
     # print ("\nConfiguración de Tesseract: ", config)
     # print("Salida de Tesseract en bruto:\n", texto_tesseract)
@@ -273,7 +278,13 @@ def segmentar_casillas(imagen_binarizada, lineas_verticales):
     #     '--psm 7 -c tessedit_char_whitelist= 0123456789/',
     # ]
 
-    leer_imagen_por_filas(columnas_segmentadas)
+    images = []
+
+    for i in range(len(columnas_segmentadas)):
+        cv2.imwrite(f"columna_{i}.jpg", columnas_segmentadas[i])
+        images.append(f"columna_{i}.jpg")
+
+    leer_imagen_por_filas(images)
 
     # for i in range(0, len(columnas_segmentadas)):
     #     leer_imagen_por_filas(columnas_segmentadas[i], config[i])
