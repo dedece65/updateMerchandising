@@ -19,6 +19,23 @@ root = tk.Tk()
 root.geometry("1000x1000")
 root.title("Modificar stock de merchandising")
 
+Camiseta_basica_S = 0
+Camiseta_basica_M = 0
+Camiseta_basica_L = 0
+Camiseta_basica_XL = 0
+Camiseta_basica_XXL  = 0
+Camiseta_panther_S = 0
+Camiseta_panther_M = 0
+Camiseta_panther_L = 0
+Camiseta_panther_XL = 0
+Camiseta_panther_XXL = 0 
+Chaqueta_S = 0
+Chaqueta_M = 0
+Chaqueta_L = 0
+Chaqueta_XL = 0
+Chaqueta_XXL  = 0
+Botella = 0
+
 ## Seleccionamos el archivo
 def seleccionar_archivo():
     global ruta_archivo
@@ -68,14 +85,15 @@ def leer_imagen_completa_ai(imagen):
     prompt = "Eres un trabajador de una empresa que se dedica a llevar la cuenta del stock de distintos productos, se te ha facilitado la siguiente imagen" \
     "y se te pide que devuelvas una lista de tuplas con el siguiente formato: Si el artículo es una prenda de vestir, cada tupla estará compuesta por 4" \
     "entradas (artículo, talla, cantidad y fecha) y si es cualquier otro objeto, omite la columna de talla, entonces estará compuesta por 3 entradas (artículo, " \
-    "cantidad y fecha) omitiendo la talla. Omite las filas vacías y devuelve solamente la salida y no el código que has utilizado.", imagen
+    "cantidad y fecha) omitiendo la talla. Quiero que cada fila este separda de las demás por ';' Omite las filas vacías y devuelve solamente la salida y no el " \
+    "código que has utilizado.", imagen
 
     model = ai.GenerativeModel(model_name= "gemini-2.0-flash")
 
     chat = model.start_chat()
     response = chat.send_message(prompt)
 
-    parsear_respuesta_gemini(response.text)
+    print(response.text)
 
 
 
