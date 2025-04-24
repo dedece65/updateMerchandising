@@ -2,3 +2,4 @@ assets/
 .venv/
 .venv-tf/
 __pycache__/
+.env

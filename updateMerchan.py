@@ -4,9 +4,15 @@ import cv2 ## Tratamiento de imagenes
 import PIL as pw ## Tratamiento de imagenes
 import tkinter as tk ## GUI
 import pdf2image
-import keras_ocr
+# import keras_ocr
+import os
+import google.generativeai as ai
 
-from PIL import Image, ImageTk ## GUI
+from dotenv import load_dotenv
+from PIL import Image ## GUI
+
+# Cargar las variables de entorno desde el archivo .env
+load_dotenv()  
 
 ## Creamos la ventana con la opción de seleccionar el archivo
 root = tk.Tk()
@@ -26,11 +32,52 @@ def seleccionar_archivo():
     #         # Guardar la imagen en un archivo temporal
     #         ruta_archivo = "temp_image.jpg"
     #         image.save(ruta_archivo, "JPEG")
-    pre_procesar_imagen(ruta_archivo)
+    # pre_procesar_imagen(ruta_archivo)
+    img = Image.open(ruta_archivo)
+    leer_imagen_completa_ai(img)
     return ruta_archivo
 
 boton_seleccionar = tk.Button(root, text="Seleccionar imagen", command=seleccionar_archivo)
 boton_seleccionar.pack(pady=10) 
+
+def parsear_respuesta_gemini(respuesta):
+    """
+    Parsea la respuesta de Gemini y devuelve una lista de tuplas con los datos extraídos.
+
+    Args:
+        respuesta: Respuesta de Gemini en formato de cadena. -> [('Chaqueta', 'XXL', 3, '16/04/2025'), ('Botella', 7, '16/04/2025'), ('Chaqueta', 'L', 1, '20/04/2025'), ('Boli', 15, '20/04/2025'), ('Camiseta básica', 'S', 8, '16/04/2025')]
+
+    Returns:
+        Una lista de tuplas con los datos extraídos.
+    """
+    # Limpiar la respuesta y convertirla a una lista
+    respuesta_limpia = respuesta.strip("[]()").replace("'", "").replace("(", "").replace(")", "").replace(",", " ").replace("  ", " ")
+
+    lista = respuesta_limpia.split("), (")
+
+    for item in lista:
+        print(item)
+
+def leer_imagen_completa_ai(imagen):
+    api_key = os.getenv("API_KEY")
+    if not api_key:
+        print("Error: API_KEY no encontrada en el archivo .env")
+        return
+    
+    ai.configure(api_key=api_key)
+    prompt = "Eres un trabajador de una empresa que se dedica a llevar la cuenta del stock de distintos productos, se te ha facilitado la siguiente imagen" \
+    "y se te pide que devuelvas una lista de tuplas con el siguiente formato: Si el artículo es una prenda de vestir, cada tupla estará compuesta por 4" \
+    "entradas (artículo, talla, cantidad y fecha) y si es cualquier otro objeto, omite la columna de talla, entonces estará compuesta por 3 entradas (artículo, " \
+    "cantidad y fecha) omitiendo la talla. Omite las filas vacías y devuelve solamente la salida y no el código que has utilizado.", imagen
+
+    model = ai.GenerativeModel(model_name= "gemini-2.0-flash")
+
+    chat = model.start_chat()
+    response = chat.send_message(prompt)
+
+    parsear_respuesta_gemini(response.text)
+
+
 
 # Inicializar variables globales para almacenar imágenes y líneas
 def mostrar_imagen(nombre_ventana, imagen):
@@ -198,26 +245,26 @@ def detectar_lineas_verticales(imagen_binarizada, umbral_x_cercanía=10, longitu
     return lineas_unidas
 
 # Leer la imagen procesada con tesseract
-def leer_imagen_por_filas(images):
-    # lang = 'spa' 
-    # texto_tesseract = pyt.image_to_string(fila, config=config, lang=lang)
+# def leer_imagen_por_filas(images):
+#     # lang = 'spa' 
+#     # texto_tesseract = pyt.image_to_string(fila, config=config, lang=lang)
 
-    imagenes = []
-    pipeline = keras_ocr.pipeline.Pipeline()
+#     # print ("\nConfiguración de Tesseract: ", config)
+#     # print("Salida de Tesseract en bruto:\n", texto_tesseract)
 
-    for image in images:
-        imagen = keras_ocr.tools.read(image)
-        imagenes.append(imagen)
+#     # return texto_tesseract
 
-    predictions = pipeline.recognize(imagenes)
+#     imagenes = []
+#     pipeline = keras_ocr.pipeline.Pipeline()
 
-    for image, prediction in zip(imagenes, predictions):
-        print(f"Predicciones para la imagen: {image}, {prediction}")
+#     for image in images:
+#         imagen = keras_ocr.tools.read(image)
+#         imagenes.append(imagen)
 
-    # print ("\nConfiguración de Tesseract: ", config)
-    # print("Salida de Tesseract en bruto:\n", texto_tesseract)
+#     predictions = pipeline.recognize(imagenes)
 
-    # return texto_tesseract
+#     for image, prediction in zip(imagenes, predictions):
+#         print(f"Predicciones para la imagen: {image}, {prediction}")
 
 def segmentar_casillas(imagen_binarizada, lineas_verticales):
     """
@@ -284,7 +331,7 @@ def segmentar_casillas(imagen_binarizada, lineas_verticales):
         cv2.imwrite(f"columna_{i}.jpg", columnas_segmentadas[i])
         images.append(f"columna_{i}.jpg")
 
-    leer_imagen_por_filas(images)
+    # leer_imagen_por_filas(images)
 
     # for i in range(0, len(columnas_segmentadas)):
     #     leer_imagen_por_filas(columnas_segmentadas[i], config[i])
