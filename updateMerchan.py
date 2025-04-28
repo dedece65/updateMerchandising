@@ -64,7 +64,6 @@ def seleccionar_archivo():
 
     return ruta_archivo
 
-seleccionar_archivo()
 
 def parsear_respuesta_gemini(respuesta):
     """
@@ -84,7 +83,7 @@ def parsear_respuesta_gemini(respuesta):
     for item in lista:
         print(item)
 
-def leer_imagen_completa_ai(imagen):
+def leer_imagen_completa_ai(imagen, i):
     api_key = os.getenv("API_KEY")
     if not api_key:
         print("Error: API_KEY no encontrada en el archivo .env")
@@ -92,22 +91,43 @@ def leer_imagen_completa_ai(imagen):
     
     ai.configure(api_key=api_key)
     
-    prompt = "Eres un trabajador de una empresa que se dedica a actualizar el stock de productos. Para ello, debes analizar filas de una tabla, cada fila tiene 4 columnas: producto, talla, cantidad y fecha. Para la fila que has recibido devuelve, solo si contiene información, una tupla con el formato (Producto; Talla; Cantidad; Fecha), omite la talla si el producto no es una prenda.", imagen
+    # Convertir la imagen al formato adecuado según su tipo
+    if isinstance(imagen, np.ndarray):
+        # Asegurar que los valores estén en el rango correcto (0-255)
+        if imagen.max() == 1:
+            imagen_procesada = (imagen * 255).astype(np.uint8)
+        else:
+            imagen_procesada = imagen.astype(np.uint8)
+        
+        # Convertir a PIL Image
+        pil_imagen = Image.fromarray(imagen_procesada)
+        
+        # Si la imagen es de un solo canal (escala de grises), convertirla a RGB
+        if pil_imagen.mode != 'RGB':
+            pil_imagen = pil_imagen.convert('RGB')
+        
+        imagen_para_prompt = pil_imagen
+    elif isinstance(imagen, str):
+        # Si es una ruta de archivo, cargar directamente
+        imagen_para_prompt = Image.open(imagen)
+    else:
+        print("Error: Tipo de imagen no soportado. Debe ser un array NumPy o una ruta de archivo.")
+        return
     
-    # prompt = "Eres un trabajador de una empresa que se dedica a llevar la cuenta del stock de distintos productos, se te ha facilitado la siguiente tabla en " \
-    # "la que cada trabajador marca qué articulo ha cogido, especifica la talla si es una prenda, escribe la cantidad de este artículo que se ha llevado y la fecha. " \
-    # "La tabla tiene 13 filas, las cuales pueden contener información o no, la forma más sencilla de ver si contienen información es mirando la celda de 'cantidad', " \
-    # "si esta contiene un número entonces deberás procesar la fila. Se te pide que devuelvas una lista de tuplas con el siguiente formato: Si el artículo es una prenda de vestir, " \
-    # "cada tupla estará compuesta por 4  entradas (artículo, talla, cantidad y fecha) y si es cualquier otro objeto, omite la columna de talla, entonces estará compuesta por 3 entradas (artículo, " \
-    # "cantidad y fecha) omitiendo la talla. Quiero que cada fila este separda de las demás por ';' Omite las filas vacías y devuelve solamente la salida y no el " \
-    # "código que has utilizado.", imagen
+    prompt = "Eres un trabajador de una empresa que se dedica a actualizar el stock de productos. Para ello, debes analizar filas de una tabla, " \
+    "cada fila tiene 4 columnas: producto, talla, cantidad y fecha. La primera columna (producto) tiene los posibles productos en formato checkbox y el producto" \
+    "seleccionado está marcado (si se ha seleccionado 'Otro', el producto es el que está escrito justo después) la segunda columna (talla)" \
+    " también tiene las tallas en formato checkbox y la talla seleccionada está marcada, la tercera columna (cantidad) contiene un número y" \
+    " la cuarta columna (fecha) contiene una fecha en formato DD/MM/YYYY. Para la fila que has recibido, debes devolver sólamente una tupla" \
+    " con el formato (Producto; Talla; Cantidad; Fecha), omite la talla si el producto no es una prenda. Además, si no hay información en la" \
+    " celda de cantidad devuelve el texto 'NO APLICA' en vez de la tupla que se te pide.", imagen_para_prompt
 
     model = ai.GenerativeModel(model_name= "gemini-2.0-flash")
 
     chat = model.start_chat()
     response = chat.send_message(prompt)
 
-    print(f"Respuesta de Gemini: {response.text}")
+    print(f"\nRespuesta de Gemini para la fila {i}: {response.text}\n")
 
 # Inicializar variables globales para almacenar imágenes y líneas
 def mostrar_imagen(nombre_ventana, imagen):
@@ -274,28 +294,6 @@ def detectar_lineas_verticales(imagen_binarizada, umbral_x_cercanía=10, longitu
 
     return lineas_unidas
 
-# Leer la imagen procesada con tesseract
-# def leer_imagen_por_filas(images):
-#     # lang = 'spa' 
-#     # texto_tesseract = pyt.image_to_string(fila, config=config, lang=lang)
-
-#     # print ("\nConfiguración de Tesseract: ", config)
-#     # print("Salida de Tesseract en bruto:\n", texto_tesseract)
-
-#     # return texto_tesseract
-
-#     imagenes = []
-#     pipeline = keras_ocr.pipeline.Pipeline()
-
-#     for image in images:
-#         imagen = keras_ocr.tools.read(image)
-#         imagenes.append(imagen)
-
-#     predictions = pipeline.recognize(imagenes)
-
-#     for image, prediction in zip(imagenes, predictions):
-#         print(f"Predicciones para la imagen: {image}, {prediction}")
-
 def segmentar_casillas(imagen_binarizada, lineas_verticales):
     """
     Segmenta la imagen en partes utilizando las líneas verticales detectadas.
@@ -403,9 +401,13 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
             filas_segmentadas.append(fila)
             y_superior_anterior = y_inferior
 
+    num_fila = 1
     for fila in filas_segmentadas:
-        leer_imagen_completa_ai(fila)
+        leer_imagen_completa_ai(fila, num_fila)
+        num_fila += 1
 
     return filas_segmentadas
+
+seleccionar_archivo()
 
 root.mainloop()
