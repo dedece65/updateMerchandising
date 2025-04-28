@@ -40,8 +40,16 @@ Botella = 0
 ## Seleccionamos el archivo
 def seleccionar_archivo():
     global ruta_archivo
-    # ruta_archivo = "./assets/pagina1.jpg"
-    ruta_archivo = filedialog.askopenfilename(title="Seleccionar archivo", filetypes=[("Archivos de imagen", "*.jpg;*.jpeg;*.png;*.pdf")])    
+    ruta_archivo = "./assets/Escaneo_test_impresora.jpg"
+    # ruta_archivo = filedialog.askopenfilename(
+    #         title="Seleccionar archivo",
+    #         initialdir=os.path.expanduser("~"),
+    #         filetypes=[
+    #             ("All Files", "*.*"),
+    #             ("Image Files", "*.jpg;*.jpeg;*.png"),
+    #             ("PDF Files", "*.pdf"),
+    #         ]
+    #     )
     # if ruta_archivo:
     #     image = pdf2image.convert_from_path(ruta_archivo, dpi=300)
     #     for image in image:
@@ -50,13 +58,13 @@ def seleccionar_archivo():
     #         # Guardar la imagen en un archivo temporal
     #         ruta_archivo = "temp_image.jpg"
     #         image.save(ruta_archivo, "JPEG")
-    # # pre_procesar_imagen(ruta_archivo)
+    pre_procesar_imagen(ruta_archivo)
     # img = Image.open(ruta_archivo)
-    leer_imagen_completa_ai(ruta_archivo)
+    # leer_imagen_completa_ai(ruta_archivo)
+
     return ruta_archivo
 
-boton_seleccionar = tk.Button(root, text="Seleccionar imagen", command=seleccionar_archivo)
-boton_seleccionar.pack(pady=10) 
+seleccionar_archivo()
 
 def parsear_respuesta_gemini(respuesta):
     """
@@ -83,22 +91,23 @@ def leer_imagen_completa_ai(imagen):
         return
     
     ai.configure(api_key=api_key)
-    prompt = "Eres un trabajador de una empresa que se dedica a llevar la cuenta del stock de distintos productos, se te ha facilitado la siguiente tabla en " \
-    "la que cada trabajador marca qué articulo ha cogido, especifica la talla si es una prenda, escribe la cantidad de este artículo que se ha llevado y la fecha. " \
-    "La tabla tiene 13 filas, las cuales pueden contener información o no, la forma más sencilla de ver si contienen información es mirando la celda de 'cantidad', " \
-    "si esta contiene un número entonces deberás procesar la fila. Se te pide que devuelvas una lista de tuplas con el siguiente formato: Si el artículo es una prenda de vestir, " \
-    "cada tupla estará compuesta por 4  entradas (artículo, talla, cantidad y fecha) y si es cualquier otro objeto, omite la columna de talla, entonces estará compuesta por 3 entradas (artículo, " \
-    "cantidad y fecha) omitiendo la talla. Quiero que cada fila este separda de las demás por ';' Omite las filas vacías y devuelve solamente la salida y no el " \
-    "código que has utilizado.", imagen
+    
+    prompt = "Eres un trabajador de una empresa que se dedica a actualizar el stock de productos. Para ello, debes analizar filas de una tabla, cada fila tiene 4 columnas: producto, talla, cantidad y fecha. Para la fila que has recibido devuelve, solo si contiene información, una tupla con el formato (Producto; Talla; Cantidad; Fecha), omite la talla si el producto no es una prenda.", imagen
+    
+    # prompt = "Eres un trabajador de una empresa que se dedica a llevar la cuenta del stock de distintos productos, se te ha facilitado la siguiente tabla en " \
+    # "la que cada trabajador marca qué articulo ha cogido, especifica la talla si es una prenda, escribe la cantidad de este artículo que se ha llevado y la fecha. " \
+    # "La tabla tiene 13 filas, las cuales pueden contener información o no, la forma más sencilla de ver si contienen información es mirando la celda de 'cantidad', " \
+    # "si esta contiene un número entonces deberás procesar la fila. Se te pide que devuelvas una lista de tuplas con el siguiente formato: Si el artículo es una prenda de vestir, " \
+    # "cada tupla estará compuesta por 4  entradas (artículo, talla, cantidad y fecha) y si es cualquier otro objeto, omite la columna de talla, entonces estará compuesta por 3 entradas (artículo, " \
+    # "cantidad y fecha) omitiendo la talla. Quiero que cada fila este separda de las demás por ';' Omite las filas vacías y devuelve solamente la salida y no el " \
+    # "código que has utilizado.", imagen
 
     model = ai.GenerativeModel(model_name= "gemini-2.0-flash")
 
     chat = model.start_chat()
     response = chat.send_message(prompt)
 
-    print(response.text)
-    print(f"Entradas con información: {len(response.text.split(';'))}")
-
+    print(f"Respuesta de Gemini: {response.text}")
 
 # Inicializar variables globales para almacenar imágenes y líneas
 def mostrar_imagen(nombre_ventana, imagen):
@@ -394,10 +403,8 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
             filas_segmentadas.append(fila)
             y_superior_anterior = y_inferior
 
-    # for i in range(1, len(filas_segmentadas)):
-    #     detectar_lineas_verticales(filas_segmentadas[i])
-
-    detectar_lineas_verticales(filas_segmentadas[1])
+    for fila in filas_segmentadas:
+        leer_imagen_completa_ai(fila)
 
     return filas_segmentadas
 
