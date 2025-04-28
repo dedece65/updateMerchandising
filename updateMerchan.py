@@ -1,24 +1,55 @@
+from tkinter import filedialog
 import numpy as np
 import pytesseract as pyt ## OCR
 import cv2 ## Tratamiento de imagenes
 import PIL as pw ## Tratamiento de imagenes
 import tkinter as tk ## GUI
 import pdf2image
+# import keras_ocr
+import os
+import google.generativeai as ai
 
-from PIL import Image, ImageTk ## GUI
+from dotenv import load_dotenv
+from PIL import Image ## GUI
+
+# Cargar las variables de entorno desde el archivo .env
+load_dotenv()  
 
 ## Creamos la ventana con la opción de seleccionar el archivo
 root = tk.Tk()
 root.geometry("1000x1000")
 root.title("Modificar stock de merchandising")
 
-## Seleccionamos el archivo y mostramos la imagen
+Camiseta_basica_S = 0
+Camiseta_basica_M = 0
+Camiseta_basica_L = 0
+Camiseta_basica_XL = 0
+Camiseta_basica_XXL  = 0
+Camiseta_panther_S = 0
+Camiseta_panther_M = 0
+Camiseta_panther_L = 0
+Camiseta_panther_XL = 0
+Camiseta_panther_XXL = 0 
+Chaqueta_S = 0
+Chaqueta_M = 0
+Chaqueta_L = 0
+Chaqueta_XL = 0
+Chaqueta_XXL  = 0
+Botella = 0
 
-
+## Seleccionamos el archivo
 def seleccionar_archivo():
     global ruta_archivo
-    ruta_archivo = "./assets/pagina1.jpg"
-    # ruta_archivo = filedialog.askopenfilename(title="Seleccionar archivo", filetypes=[("Archivos de imagen", "*.jpg;*.jpeg;*.png;*.pdf")])    
+    ruta_archivo = "./assets/Escaneo_test_impresora.jpg"
+    # ruta_archivo = filedialog.askopenfilename(
+    #         title="Seleccionar archivo",
+    #         initialdir=os.path.expanduser("~"),
+    #         filetypes=[
+    #             ("All Files", "*.*"),
+    #             ("Image Files", "*.jpg;*.jpeg;*.png"),
+    #             ("PDF Files", "*.pdf"),
+    #         ]
+    #     )
     # if ruta_archivo:
     #     image = pdf2image.convert_from_path(ruta_archivo, dpi=300)
     #     for image in image:
@@ -28,10 +59,75 @@ def seleccionar_archivo():
     #         ruta_archivo = "temp_image.jpg"
     #         image.save(ruta_archivo, "JPEG")
     pre_procesar_imagen(ruta_archivo)
+    # img = Image.open(ruta_archivo)
+    # leer_imagen_completa_ai(ruta_archivo)
+
     return ruta_archivo
 
-boton_seleccionar = tk.Button(root, text="Seleccionar imagen", command=seleccionar_archivo)
-boton_seleccionar.pack(pady=10) 
+
+def parsear_respuesta_gemini(respuesta):
+    """
+    Parsea la respuesta de Gemini y devuelve una lista de tuplas con los datos extraídos.
+
+    Args:
+        respuesta: Respuesta de Gemini en formato de cadena. -> [('Chaqueta', 'XXL', 3, '16/04/2025'), ('Botella', 7, '16/04/2025'), ('Chaqueta', 'L', 1, '20/04/2025'), ('Boli', 15, '20/04/2025'), ('Camiseta básica', 'S', 8, '16/04/2025')]
+
+    Returns:
+        Una lista de tuplas con los datos extraídos.
+    """
+    # Limpiar la respuesta y convertirla a una lista
+    respuesta_limpia = respuesta.strip("[]()").replace("'", "").replace("(", "").replace(")", "").replace(",", " ").replace("  ", " ")
+
+    lista = respuesta_limpia.split("), (")
+
+    for item in lista:
+        print(item)
+
+def leer_imagen_completa_ai(imagen, i):
+    api_key = os.getenv("API_KEY")
+    if not api_key:
+        print("Error: API_KEY no encontrada en el archivo .env")
+        return
+    
+    ai.configure(api_key=api_key)
+    
+    # Convertir la imagen al formato adecuado según su tipo
+    if isinstance(imagen, np.ndarray):
+        # Asegurar que los valores estén en el rango correcto (0-255)
+        if imagen.max() == 1:
+            imagen_procesada = (imagen * 255).astype(np.uint8)
+        else:
+            imagen_procesada = imagen.astype(np.uint8)
+        
+        # Convertir a PIL Image
+        pil_imagen = Image.fromarray(imagen_procesada)
+        
+        # Si la imagen es de un solo canal (escala de grises), convertirla a RGB
+        if pil_imagen.mode != 'RGB':
+            pil_imagen = pil_imagen.convert('RGB')
+        
+        imagen_para_prompt = pil_imagen
+    elif isinstance(imagen, str):
+        # Si es una ruta de archivo, cargar directamente
+        imagen_para_prompt = Image.open(imagen)
+    else:
+        print("Error: Tipo de imagen no soportado. Debe ser un array NumPy o una ruta de archivo.")
+        return
+    
+    prompt = "Eres un trabajador de una empresa que se dedica a actualizar el stock de productos. Para ello, debes analizar filas de una tabla, " \
+    "cada fila tiene 4 columnas: producto, talla, cantidad y fecha. La primera columna (producto) tiene los posibles productos en formato checkbox y el producto" \
+    "seleccionado está marcado (si se ha seleccionado 'Otro', el producto es el que está escrito justo después) la segunda columna (talla)" \
+    " también tiene las tallas en formato checkbox y la talla seleccionada está marcada, la tercera columna (cantidad) contiene un número y" \
+    " la cuarta columna (fecha) contiene una fecha en formato DD/MM/YYYY. Para la fila que has recibido, debes devolver sólamente una tupla" \
+    " con el formato (Producto; Talla; Cantidad; Fecha), omite la talla si el producto no es una prenda. Además, si no hay información en la" \
+    " celda de cantidad devuelve el texto 'NO APLICA' en vez de la tupla que se te pide.", imagen_para_prompt
+
+    model = ai.GenerativeModel(model_name= "gemini-2.0-flash")
+
+    chat = model.start_chat()
+    response = chat.send_message(prompt)
+
+    print(f"\nRespuesta de Gemini para la fila {i}: {response.text}\n")
 
 # Inicializar variables globales para almacenar imágenes y líneas
 def mostrar_imagen(nombre_ventana, imagen):
@@ -198,46 +294,6 @@ def detectar_lineas_verticales(imagen_binarizada, umbral_x_cercanía=10, longitu
 
     return lineas_unidas
 
-# Leer la imagen procesada con tesseract
-def leer_imagen_por_filas(fila):
-    config = '--psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúñÑÁÉÍÓÚ/'  # Configuración de Tesseract
-    lang = 'spa'  # Idioma español
-    texto_tesseract = pyt.image_to_string(fila, config=config, lang=lang)
-
-    # Guardar el DataFrame en un archivo CSV
-    # texto_tesseract.to_csv('output_tesseract.csv', index=False, encoding='utf-8')
-    # print("Datos guardados en 'output_tesseract.csv'")
-
-    print("Salida de Tesseract en bruto:\n", texto_tesseract)
-
-    # filas = []
-    # lineas = texto_tesseract.split('\n')
-
-    # for linea in lineas:
-    #     linea = linea.strip()
-    #     if not linea:
-    #         continue
-
-    #     # Dividir la línea en partes
-    #     partes = linea.split()
-    #     # Verificar si la línea tiene al menos 3 partes
-    #     if len(partes) == 3:
-    #         # Obtener el nombre del producto y el stock
-    #         nombre_producto = partes[0]
-    #         stock = partes[1]
-    #         fecha = partes[2]
-    #         filas.append((nombre_producto, stock, fecha)) 
-    #     elif len(partes) > 3:    
-    #         nombre_producto = " ".join(partes[:2])
-    #         stock = partes[2]
-    #         fecha = partes[3] 
-    #         filas.append((nombre_producto, stock, fecha))
-    
-    # for fila in filas:
-    #     print(fila)
-
-    return texto_tesseract
-
 def segmentar_casillas(imagen_binarizada, lineas_verticales):
     """
     Segmenta la imagen en partes utilizando las líneas verticales detectadas.
@@ -290,11 +346,23 @@ def segmentar_casillas(imagen_binarizada, lineas_verticales):
         if columna_derecha.shape[1] > 0:
             columnas_segmentadas.append(columna_derecha)
 
+    # config = [
+    #     '--psm 6 -c tessedit_char_whitelist= abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZáéíóúüñÑÁÉÍÓÚ',
+    #     '--psm 6 -c tessedit_char_whitelist= SMLX',
+    #     '--psm 7 -c tessedit_char_whitelist= 0123456789',
+    #     '--psm 7 -c tessedit_char_whitelist= 0123456789/',
+    # ]
 
-    for i in range(0, len(columnas_segmentadas)):
-        save_path = f"columna_segmentada{i}.jpg"
-        cv2.imwrite(save_path, columnas_segmentadas[i])
-        mostrar_imagen("Columna Segmentada", columnas_segmentadas[i])
+    images = []
+
+    for i in range(len(columnas_segmentadas)):
+        cv2.imwrite(f"columna_{i}.jpg", columnas_segmentadas[i])
+        images.append(f"columna_{i}.jpg")
+
+    # leer_imagen_por_filas(images)
+
+    # for i in range(0, len(columnas_segmentadas)):
+    #     leer_imagen_por_filas(columnas_segmentadas[i], config[i])
 
     print(f"Se segmentaron {len(columnas_segmentadas)} columnas de la imagen.")
     
@@ -333,11 +401,13 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
             filas_segmentadas.append(fila)
             y_superior_anterior = y_inferior
 
-    # for i in range(1, len(filas_segmentadas)):
-    #     detectar_lineas_verticales(filas_segmentadas[i])
-
-    detectar_lineas_verticales(filas_segmentadas[1])
+    num_fila = 1
+    for fila in filas_segmentadas:
+        leer_imagen_completa_ai(fila, num_fila)
+        num_fila += 1
 
     return filas_segmentadas
+
+seleccionar_archivo()
 
 root.mainloop()
