@@ -9,6 +9,7 @@ import pdf2image
 import os
 import google.generativeai as ai
 
+from datetime import datetime
 from dotenv import load_dotenv
 from PIL import Image ## GUI
 
@@ -30,33 +31,43 @@ Camiseta_panther_S = Camiseta_panther_M = Camiseta_panther_L = Camiseta_panther_
 Chaqueta_S = Chaqueta_M = Chaqueta_L = Chaqueta_XL = Chaqueta_XXL = 0
 Botella = 0
 
-## Seleccionamos el archivo
+
+## Seleccionamos el 
+## TODO: Investigar obect cannot be nil ???
 def seleccionar_archivo():
     global ruta_archivo
-    ruta_archivo = "./assets/Escaneo_test_impresora.jpg"
-    # ruta_archivo = filedialog.askopenfilename(
-    #         title="Seleccionar archivo",
-    #         initialdir=os.path.expanduser("~"),
-    #         filetypes=[
-    #             ("All Files", "*.*"),
-    #             ("Image Files", "*.jpg;*.jpeg;*.png"),
-    #             ("PDF Files", "*.pdf"),
-    #         ]
-    #     )
-    # if ruta_archivo:
-    #     image = pdf2image.convert_from_path(ruta_archivo, dpi=300)
-    #     for image in image:
-    #         # Convertir la imagen a un formato compatible con PIL
-    #         image = image.convert("RGB")
-    #         # Guardar la imagen en un archivo temporal
-    #         ruta_archivo = "temp_image.jpg"
-    #         image.save(ruta_archivo, "JPEG")
+    
+    ruta_archivo = ""
+
+    date = datetime.today().strftime("%d-%m-%Y")
+    # ruta_archivo = "./assets/Escaneo_test_impresora.jpg"
+    ruta_archivo = filedialog.askopenfilename(
+            title="Seleccionar archivo",
+            initialdir=os.path.expanduser("~"),
+            filetypes=[
+                ("All Files", "*.*"),
+                ("Image Files", "*.jpg;*.jpeg;*.png"),
+                ("PDF Files", "*.pdf"),
+            ]
+        )
+    if ruta_archivo:
+        image = pdf2image.convert_from_path(ruta_archivo, dpi=300)
+        for image in image:
+            # Convertir la imagen a un formato compatible con PIL
+            image = image.convert("RGB")
+            # Guardar la imagen en un archivo temporal
+            ruta_archivo = f"{date}stock.jpg"
+            # ruta_archivo = "stock.jpg"
+            image.save(ruta_archivo, "JPEG")
     pre_procesar_imagen(ruta_archivo)
     # img = Image.open(ruta_archivo)
     # leer_imagen_completa_ai(ruta_archivo)
 
     return ruta_archivo
 
+# Botón para seleccionar archivo
+boton_seleccionar_archivo = tk.Button(root, text="Seleccionar archivo", command=seleccionar_archivo)
+boton_seleccionar_archivo.pack(pady=20)
 
 def parsear_respuesta_gemini(respuesta, i):
     """
@@ -375,6 +386,6 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
             """)
     return filas_segmentadas
 
-seleccionar_archivo()
+# seleccionar_archivo()
 
 root.mainloop()
