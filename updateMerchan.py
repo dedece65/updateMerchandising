@@ -25,6 +25,11 @@ global Camiseta_panther_S, Camiseta_panther_M, Camiseta_panther_L, Camiseta_pant
 global Chaqueta_S, Chaqueta_M, Chaqueta_L, Chaqueta_XL, Chaqueta_XXL
 global Botella
 
+Camiseta_basica_S = Camiseta_basica_M = Camiseta_basica_L = Camiseta_basica_XL = Camiseta_basica_XXL = 0
+Camiseta_panther_S = Camiseta_panther_M = Camiseta_panther_L = Camiseta_panther_XL = Camiseta_panther_XXL = 0
+Chaqueta_S = Chaqueta_M = Chaqueta_L = Chaqueta_XL = Chaqueta_XXL = 0
+Botella = 0
+
 ## Seleccionamos el archivo
 def seleccionar_archivo():
     global ruta_archivo
@@ -63,6 +68,12 @@ def parsear_respuesta_gemini(respuesta, i):
     Returns:
         Una tupla con los datos extraídos o None si la respuesta es 'NO APLICA'.
     """
+
+    global Camiseta_basica_S, Camiseta_basica_M, Camiseta_basica_L, Camiseta_basica_XL, Camiseta_basica_XXL
+    global Camiseta_panther_S, Camiseta_panther_M, Camiseta_panther_L, Camiseta_panther_XL, Camiseta_panther_XXL
+    global Chaqueta_S, Chaqueta_M, Chaqueta_L, Chaqueta_XL, Chaqueta_XXL
+    global Botella
+
     # Si la respuesta contiene 'NO APLICA', devolver None
     if 'NO APLICA' in respuesta:
         print(f"Fila {i}: NO APLICA\n")
