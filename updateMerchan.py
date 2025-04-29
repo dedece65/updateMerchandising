@@ -134,7 +134,7 @@ def parsear_respuesta_gemini(respuesta, i):
                     Camiseta_basica_XL += elementos_limpios[2]
                 elif elementos_limpios[1] == "XXL":
                     Camiseta_basica_XXL += elementos_limpios[2]
-            if elementos_limpios[0] == "Camiseta Panther":
+            if elementos_limpios[0] == "Camiseta panther":
                 if elementos_limpios[1] == "S":
                     Camiseta_panther_S += elementos_limpios[2]
                 elif elementos_limpios[1] == "M":
@@ -158,7 +158,7 @@ def parsear_respuesta_gemini(respuesta, i):
                     Chaqueta_XXL += elementos_limpios[2]
         elif len(elementos_limpios) == 3:
             if elementos_limpios[0] == "Botella":
-                print(f"encontrada una {elementos_limpios[0]} y se ha actualizado la cantidad a {elementos_limpios[1]}")
+                Botella += elementos_limpios[1]
             else:
                 print(f"Esta fila tiene un producto nuevo y hay que añadirlo a la base de datos, el producto es: {elementos_limpios[0]}\n")
         
@@ -349,10 +349,30 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
         leer_imagen_completa_ai(fila, num_fila)
         num_fila += 1
     
-    print(f"Se han dado los siguientes productos: Botellas -> {Botella}, " \
-          f"Camisetas básicas -> {Camiseta_basica_S + Camiseta_basica_M + Camiseta_basica_L + Camiseta_basica_XL + Camiseta_basica_XXL}, " \
-          f"Camisetas Panther -> {Camiseta_panther_S + Camiseta_panther_M + Camiseta_panther_L + Camiseta_panther_XL + Camiseta_panther_XXL}, Chaquetas -> {Chaqueta_S + Chaqueta_M + Chaqueta_L + Chaqueta_XL + Chaqueta_XXL}\n")
-
+    print(f"""Se han dado los siguientes productos:
+            Botellas -> {Botella}
+            Camisetas básicas:
+            - S: {Camiseta_basica_S}
+            - M: {Camiseta_basica_M}
+            - L: {Camiseta_basica_L}
+            - XL: {Camiseta_basica_XL}
+            - XXL: {Camiseta_basica_XXL}
+            Total: {Camiseta_basica_S + Camiseta_basica_M + Camiseta_basica_L + Camiseta_basica_XL + Camiseta_basica_XXL}
+            Camisetas Panther:
+            - S: {Camiseta_panther_S}
+            - M: {Camiseta_panther_M}
+            - L: {Camiseta_panther_L}
+            - XL: {Camiseta_panther_XL}
+            - XXL: {Camiseta_panther_XXL}
+            Total: {Camiseta_panther_S + Camiseta_panther_M + Camiseta_panther_L + Camiseta_panther_XL + Camiseta_panther_XXL}
+            Chaquetas:
+            - S: {Chaqueta_S}
+            - M: {Chaqueta_M}
+            - L: {Chaqueta_L}
+            - XL: {Chaqueta_XL}
+            - XXL: {Chaqueta_XXL}
+            Total: {Chaqueta_S + Chaqueta_M + Chaqueta_L + Chaqueta_XL + Chaqueta_XXL}
+            """)
     return filas_segmentadas
 
 seleccionar_archivo()
