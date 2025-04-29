@@ -20,22 +20,10 @@ root = tk.Tk()
 root.geometry("1000x1000")
 root.title("Modificar stock de merchandising")
 
-Camiseta_basica_S = 0
-Camiseta_basica_M = 0
-Camiseta_basica_L = 0
-Camiseta_basica_XL = 0
-Camiseta_basica_XXL  = 0
-Camiseta_panther_S = 0
-Camiseta_panther_M = 0
-Camiseta_panther_L = 0
-Camiseta_panther_XL = 0
-Camiseta_panther_XXL = 0 
-Chaqueta_S = 0
-Chaqueta_M = 0
-Chaqueta_L = 0
-Chaqueta_XL = 0
-Chaqueta_XXL  = 0
-Botella = 0
+global Camiseta_basica_S, Camiseta_basica_M, Camiseta_basica_L, Camiseta_basica_XL, Camiseta_basica_XXL
+global Camiseta_panther_S, Camiseta_panther_M, Camiseta_panther_L, Camiseta_panther_XL, Camiseta_panther_XXL
+global Chaqueta_S, Chaqueta_M, Chaqueta_L, Chaqueta_XL, Chaqueta_XXL
+global Botella
 
 ## Seleccionamos el archivo
 def seleccionar_archivo():
@@ -65,23 +53,107 @@ def seleccionar_archivo():
     return ruta_archivo
 
 
-def parsear_respuesta_gemini(respuesta):
+def parsear_respuesta_gemini(respuesta, i):
     """
-    Parsea la respuesta de Gemini y devuelve una lista de tuplas con los datos extraídos.
+    Parsea la respuesta de Gemini y actualiza el producto.
 
     Args:
-        respuesta: Respuesta de Gemini en formato de cadena. -> [('Chaqueta', 'XXL', 3, '16/04/2025'), ('Botella', 7, '16/04/2025'), ('Chaqueta', 'L', 1, '20/04/2025'), ('Boli', 15, '20/04/2025'), ('Camiseta básica', 'S', 8, '16/04/2025')]
+        respuesta: Respuesta de Gemini en formato de texto.
 
     Returns:
-        Una lista de tuplas con los datos extraídos.
+        Una tupla con los datos extraídos o None si la respuesta es 'NO APLICA'.
     """
-    # Limpiar la respuesta y convertirla a una lista
-    respuesta_limpia = respuesta.strip("[]()").replace("'", "").replace("(", "").replace(")", "").replace(",", " ").replace("  ", " ")
-
-    lista = respuesta_limpia.split("), (")
-
-    for item in lista:
-        print(item)
+    # Si la respuesta contiene 'NO APLICA', devolver None
+    if 'NO APLICA' in respuesta:
+        print(f"Fila {i}: NO APLICA\n")
+        return None
+    
+    # Buscar patrón de tupla en la respuesta
+    import re
+    
+    # Buscar patrones de tupla con paréntesis y elementos separados por punto y coma o coma
+    patron_tupla = r"\((.*?)\)"
+    coincidencia = re.search(patron_tupla, respuesta)
+    
+    if not coincidencia:
+        print(f"Fila {i}: No se encontró la coincidencia\n")
+        return None
+    
+    # Extraer el contenido de la tupla
+    contenido_tupla = coincidencia.group(1)
+    
+    # Verificar si los elementos están separados por punto y coma o por coma
+    if ';' in contenido_tupla:
+        elementos = contenido_tupla.split(';')
+    else:
+        # Si no hay punto y coma
+        print(f"Fila {i}: No se encontró el separador ';', el contenido proporcionado es: {contenido_tupla}\n")
+        return None
+    
+    # Limpiar cada elemento (quitar comillas y espacios)
+    elementos_limpios = []
+    for elemento in elementos:
+        # Quitar comillas simples o dobles y espacios en blanco
+        elemento = elemento.strip()
+        if elemento.startswith(("'", '"')) and elemento.endswith(("'", '"')):
+            elemento = elemento[1:-1]
+        
+        # Intentar convertir números a enteros
+        try:
+            if elemento.isdigit():
+                elemento = int(elemento)
+        except (ValueError, AttributeError):
+            pass
+        
+        elementos_limpios.append(elemento)
+    
+    # Si hay 3 o 4 elementos (dependiendo de si es ropa o no), devolver la tupla
+    if 3 <= len(elementos_limpios) <= 4:
+        print(f"Fila {i} correcta, la información es: {elementos_limpios}, actualizando datos...\n")
+        # Actualizar los datos según el producto
+        if len(elementos_limpios) == 4:
+            if elementos_limpios[0] == "Camiseta básica":
+                if elementos_limpios[1] == "S":
+                    Camiseta_basica_S += elementos_limpios[2]
+                elif elementos_limpios[1] == "M":
+                    Camiseta_basica_M += elementos_limpios[2]
+                elif elementos_limpios[1] == "L":
+                    Camiseta_basica_L += elementos_limpios[2]
+                elif elementos_limpios[1] == "XL":
+                    Camiseta_basica_XL += elementos_limpios[2]
+                elif elementos_limpios[1] == "XXL":
+                    Camiseta_basica_XXL += elementos_limpios[2]
+            if elementos_limpios[0] == "Camiseta Panther":
+                if elementos_limpios[1] == "S":
+                    Camiseta_panther_S += elementos_limpios[2]
+                elif elementos_limpios[1] == "M":
+                    Camiseta_panther_M += elementos_limpios[2]
+                elif elementos_limpios[1] == "L":
+                    Camiseta_panther_L += elementos_limpios[2]
+                elif elementos_limpios[1] == "XL":
+                    Camiseta_panther_XL += elementos_limpios[2]
+                elif elementos_limpios[1] == "XXL":
+                    Camiseta_panther_XXL += elementos_limpios[2]
+            if elementos_limpios[0] == "Chaqueta":
+                if elementos_limpios[1] == "S":
+                    Chaqueta_S += elementos_limpios[2]
+                elif elementos_limpios[1] == "M":
+                    Chaqueta_M += elementos_limpios[2]
+                elif elementos_limpios[1] == "L":
+                    Chaqueta_L += elementos_limpios[2]
+                elif elementos_limpios[1] == "XL":
+                    Chaqueta_XL += elementos_limpios[2]
+                elif elementos_limpios[1] == "XXL":
+                    Chaqueta_XXL += elementos_limpios[2]
+        elif len(elementos_limpios) == 3:
+            if elementos_limpios[0] == "Botella":
+                print(f"encontrada una {elementos_limpios[0]} y se ha actualizado la cantidad a {elementos_limpios[1]}")
+            else:
+                print(f"Esta fila tiene un producto nuevo y hay que añadirlo a la base de datos, el producto es: {elementos_limpios[0]}\n")
+        
+        return tuple(elementos_limpios)
+        
+    return None
 
 def leer_imagen_completa_ai(imagen, i):
     api_key = os.getenv("API_KEY")
@@ -127,7 +199,8 @@ def leer_imagen_completa_ai(imagen, i):
     chat = model.start_chat()
     response = chat.send_message(prompt)
 
-    print(f"\nRespuesta de Gemini para la fila {i}: {response.text}\n")
+    parsear_respuesta_gemini(response.text, i)
+    # print(f"\nRespuesta de Gemini para la fila {i}: {response.text}\n")
 
 # Inicializar variables globales para almacenar imágenes y líneas
 def mostrar_imagen(nombre_ventana, imagen):
@@ -222,8 +295,6 @@ def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longit
     imagen_con_lineas = cv2.cvtColor(imagen_binarizada.copy(), cv2.COLOR_GRAY2BGR)
     for x_inicial, y, x_final in lineas_unidas:
         cv2.line(imagen_con_lineas, (x_inicial, y), (x_final, y), (0, 0, 255), 2, cv2.LINE_AA)
-    
-    print(f"Se encontraron {len(lineas_unidas)} líneas horizontales unidas y filtradas.")
 
     segmentar_imagenes(imagen_binarizada, lineas_unidas)   
 
@@ -266,6 +337,10 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
     for fila in filas_segmentadas:
         leer_imagen_completa_ai(fila, num_fila)
         num_fila += 1
+    
+    print(f"Se han dado los siguientes productos: Botellas -> {Botella}, " \
+          f"Camisetas básicas -> {Camiseta_basica_S + Camiseta_basica_M + Camiseta_basica_L + Camiseta_basica_XL + Camiseta_basica_XXL}, " \
+          f"Camisetas Panther -> {Camiseta_panther_S + Camiseta_panther_M + Camiseta_panther_L + Camiseta_panther_XL + Camiseta_panther_XXL}, Chaquetas -> {Chaqueta_S + Chaqueta_M + Chaqueta_L + Chaqueta_XL + Chaqueta_XXL}\n")
 
     return filas_segmentadas
 
