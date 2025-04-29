@@ -20,21 +20,14 @@ root = tk.Tk()
 root.geometry("1000x1000")
 root.title("Modificar stock de merchandising")
 
-Camiseta_basica_S = 0
-Camiseta_basica_M = 0
-Camiseta_basica_L = 0
-Camiseta_basica_XL = 0
-Camiseta_basica_XXL  = 0
-Camiseta_panther_S = 0
-Camiseta_panther_M = 0
-Camiseta_panther_L = 0
-Camiseta_panther_XL = 0
-Camiseta_panther_XXL = 0 
-Chaqueta_S = 0
-Chaqueta_M = 0
-Chaqueta_L = 0
-Chaqueta_XL = 0
-Chaqueta_XXL  = 0
+global Camiseta_basica_S, Camiseta_basica_M, Camiseta_basica_L, Camiseta_basica_XL, Camiseta_basica_XXL
+global Camiseta_panther_S, Camiseta_panther_M, Camiseta_panther_L, Camiseta_panther_XL, Camiseta_panther_XXL
+global Chaqueta_S, Chaqueta_M, Chaqueta_L, Chaqueta_XL, Chaqueta_XXL
+global Botella
+
+Camiseta_basica_S = Camiseta_basica_M = Camiseta_basica_L = Camiseta_basica_XL = Camiseta_basica_XXL = 0
+Camiseta_panther_S = Camiseta_panther_M = Camiseta_panther_L = Camiseta_panther_XL = Camiseta_panther_XXL = 0
+Chaqueta_S = Chaqueta_M = Chaqueta_L = Chaqueta_XL = Chaqueta_XXL = 0
 Botella = 0
 
 ## Seleccionamos el archivo
@@ -65,23 +58,113 @@ def seleccionar_archivo():
     return ruta_archivo
 
 
-def parsear_respuesta_gemini(respuesta):
+def parsear_respuesta_gemini(respuesta, i):
     """
-    Parsea la respuesta de Gemini y devuelve una lista de tuplas con los datos extraídos.
+    Parsea la respuesta de Gemini y actualiza el producto.
 
     Args:
-        respuesta: Respuesta de Gemini en formato de cadena. -> [('Chaqueta', 'XXL', 3, '16/04/2025'), ('Botella', 7, '16/04/2025'), ('Chaqueta', 'L', 1, '20/04/2025'), ('Boli', 15, '20/04/2025'), ('Camiseta básica', 'S', 8, '16/04/2025')]
+        respuesta: Respuesta de Gemini en formato de texto.
 
     Returns:
-        Una lista de tuplas con los datos extraídos.
+        Una tupla con los datos extraídos o None si la respuesta es 'NO APLICA'.
     """
-    # Limpiar la respuesta y convertirla a una lista
-    respuesta_limpia = respuesta.strip("[]()").replace("'", "").replace("(", "").replace(")", "").replace(",", " ").replace("  ", " ")
 
-    lista = respuesta_limpia.split("), (")
+    global Camiseta_basica_S, Camiseta_basica_M, Camiseta_basica_L, Camiseta_basica_XL, Camiseta_basica_XXL
+    global Camiseta_panther_S, Camiseta_panther_M, Camiseta_panther_L, Camiseta_panther_XL, Camiseta_panther_XXL
+    global Chaqueta_S, Chaqueta_M, Chaqueta_L, Chaqueta_XL, Chaqueta_XXL
+    global Botella
 
-    for item in lista:
-        print(item)
+    # Si la respuesta contiene 'NO APLICA', devolver None
+    if 'NO APLICA' in respuesta:
+        print(f"Fila {i}: NO APLICA\n")
+        return None
+    
+    # Buscar patrón de tupla en la respuesta
+    import re
+    
+    # Buscar patrones de tupla con paréntesis y elementos separados por punto y coma o coma
+    patron_tupla = r"\((.*?)\)"
+    coincidencia = re.search(patron_tupla, respuesta)
+    
+    if not coincidencia:
+        print(f"Fila {i}: No se encontró la coincidencia\n")
+        return None
+    
+    # Extraer el contenido de la tupla
+    contenido_tupla = coincidencia.group(1)
+    
+    # Verificar si los elementos están separados por punto y coma o por coma
+    if ';' in contenido_tupla:
+        elementos = contenido_tupla.split(';')
+    else:
+        # Si no hay punto y coma
+        print(f"Fila {i}: No se encontró el separador ';', el contenido proporcionado es: {contenido_tupla}\n")
+        return None
+    
+    # Limpiar cada elemento (quitar comillas y espacios)
+    elementos_limpios = []
+    for elemento in elementos:
+        # Quitar comillas simples o dobles y espacios en blanco
+        elemento = elemento.strip()
+        if elemento.startswith(("'", '"')) and elemento.endswith(("'", '"')):
+            elemento = elemento[1:-1]
+        
+        # Intentar convertir números a enteros
+        try:
+            if elemento.isdigit():
+                elemento = int(elemento)
+        except (ValueError, AttributeError):
+            pass
+        
+        elementos_limpios.append(elemento)
+    
+    # Si hay 3 o 4 elementos (dependiendo de si es ropa o no), devolver la tupla
+    if 3 <= len(elementos_limpios) <= 4:
+        print(f"Fila {i} correcta, la información es: {elementos_limpios}, actualizando datos...\n")
+        # Actualizar los datos según el producto
+        if len(elementos_limpios) == 4:
+            if elementos_limpios[0] == "Camiseta básica":
+                if elementos_limpios[1] == "S":
+                    Camiseta_basica_S += elementos_limpios[2]
+                elif elementos_limpios[1] == "M":
+                    Camiseta_basica_M += elementos_limpios[2]
+                elif elementos_limpios[1] == "L":
+                    Camiseta_basica_L += elementos_limpios[2]
+                elif elementos_limpios[1] == "XL":
+                    Camiseta_basica_XL += elementos_limpios[2]
+                elif elementos_limpios[1] == "XXL":
+                    Camiseta_basica_XXL += elementos_limpios[2]
+            if elementos_limpios[0] == "Camiseta panther":
+                if elementos_limpios[1] == "S":
+                    Camiseta_panther_S += elementos_limpios[2]
+                elif elementos_limpios[1] == "M":
+                    Camiseta_panther_M += elementos_limpios[2]
+                elif elementos_limpios[1] == "L":
+                    Camiseta_panther_L += elementos_limpios[2]
+                elif elementos_limpios[1] == "XL":
+                    Camiseta_panther_XL += elementos_limpios[2]
+                elif elementos_limpios[1] == "XXL":
+                    Camiseta_panther_XXL += elementos_limpios[2]
+            if elementos_limpios[0] == "Chaqueta":
+                if elementos_limpios[1] == "S":
+                    Chaqueta_S += elementos_limpios[2]
+                elif elementos_limpios[1] == "M":
+                    Chaqueta_M += elementos_limpios[2]
+                elif elementos_limpios[1] == "L":
+                    Chaqueta_L += elementos_limpios[2]
+                elif elementos_limpios[1] == "XL":
+                    Chaqueta_XL += elementos_limpios[2]
+                elif elementos_limpios[1] == "XXL":
+                    Chaqueta_XXL += elementos_limpios[2]
+        elif len(elementos_limpios) == 3:
+            if elementos_limpios[0] == "Botella":
+                Botella += elementos_limpios[1]
+            else:
+                print(f"Esta fila tiene un producto nuevo y hay que añadirlo a la base de datos, el producto es: {elementos_limpios[0]}\n")
+        
+        return tuple(elementos_limpios)
+        
+    return None
 
 def leer_imagen_completa_ai(imagen, i):
     api_key = os.getenv("API_KEY")
@@ -127,7 +210,8 @@ def leer_imagen_completa_ai(imagen, i):
     chat = model.start_chat()
     response = chat.send_message(prompt)
 
-    print(f"\nRespuesta de Gemini para la fila {i}: {response.text}\n")
+    parsear_respuesta_gemini(response.text, i)
+    # print(f"\nRespuesta de Gemini para la fila {i}: {response.text}\n")
 
 # Inicializar variables globales para almacenar imágenes y líneas
 def mostrar_imagen(nombre_ventana, imagen):
@@ -222,151 +306,10 @@ def detectar_lineas_horizontales(imagen_binarizada, umbral_y_cercania=10, longit
     imagen_con_lineas = cv2.cvtColor(imagen_binarizada.copy(), cv2.COLOR_GRAY2BGR)
     for x_inicial, y, x_final in lineas_unidas:
         cv2.line(imagen_con_lineas, (x_inicial, y), (x_final, y), (0, 0, 255), 2, cv2.LINE_AA)
-    
-    print(f"Se encontraron {len(lineas_unidas)} líneas horizontales unidas y filtradas.")
 
     segmentar_imagenes(imagen_binarizada, lineas_unidas)   
 
     return lineas_unidas
-
-def detectar_lineas_verticales(imagen_binarizada, umbral_x_cercanía=10, longitud_minima=20):
-    """
-    Detecta líneas verticales en una imagen binarizada usando la Transformada de Hough Probabilística.
-
-    Args:
-        imagen_binarizada: Imagen binarizada
-        umbral_x_cercania: Si 2 lineas estan a menos de este umbral se unen
-        longitud_minima: Longitud minima para que una línea se devuelva.
-    
-    Returns:
-        Una lista de líneas verticales detectadas, donde cada línea es una tupla (x1, y1, y2).
-    """
-
-    lineas = cv2.HoughLinesP(imagen_binarizada, rho=1, theta=np.pi/180, threshold=100, minLineLength=longitud_minima // 2, maxLineGap=20)
-
-    ancho = imagen_binarizada.shape[1]
-    margen = int(ancho * 0.1)
-
-    if lineas is None:
-        return []
-
-    lineas_verticales = []
-    for linea in lineas:
-        x1, y1, x2, y2 = linea[0]
-        if abs(x1 - x2) < umbral_x_cercanía:
-            # Guardamos las líneas como (x, y_inicial, y_final) para facilitar la unión
-            if x1 > margen and x1 < (ancho - margen) and \
-               x2 > margen and x2 < (ancho - margen):
-                lineas_verticales.append((x1, min(y1, y2), max(y1, y2)))
-
-    lineas_verticales.sort(key=lambda x: x[0])  # Ordenar por 'x'
-
-    lineas_unidas = []
-    if lineas_verticales:
-        linea_actual_x = lineas_verticales[0][0]
-        y_min_actual = lineas_verticales[0][1]
-        y_max_actual = lineas_verticales[0][2]
-
-        for i in range(1, len(lineas_verticales)):
-            x, y_min, y_max = lineas_verticales[i]
-            if abs(x - linea_actual_x) < umbral_x_cercanía:
-                y_min_actual = min(y_min_actual, y_min)
-                y_max_actual = max(y_max_actual, y_max)
-            else:
-                if (y_max_actual - y_min_actual) >= longitud_minima:
-                    lineas_unidas.append((linea_actual_x, y_min_actual, y_max_actual))
-                linea_actual_x = x
-                y_min_actual = y_min
-                y_max_actual = y_max
-
-        # Añadir la última línea unida (si cumple la longitud mínima)
-        if (y_max_actual - y_min_actual) >= longitud_minima:
-            lineas_unidas.append((linea_actual_x, y_min_actual, y_max_actual))
-
-    # Visualizar las líneas unidas y filtradas
-    imagen_con_lineas = cv2.cvtColor(imagen_binarizada.copy(), cv2.COLOR_GRAY2BGR)
-    for x, y_inicial, y_final in lineas_unidas:
-        cv2.line(imagen_con_lineas, (x, y_inicial), (x, y_final), (255, 0, 0), 2, cv2.LINE_AA)
-    
-    print(f"Se encontraron {len(lineas_unidas)} líneas verticales unidas y filtradas.")
-
-    segmentar_casillas(imagen_binarizada, lineas_unidas)
-
-    return lineas_unidas
-
-def segmentar_casillas(imagen_binarizada, lineas_verticales):
-    """
-    Segmenta la imagen en partes utilizando las líneas verticales detectadas.
-
-    Args:
-        imagen_binarizada: Imagen binarizada
-        lineas_verticales: Lista de líneas verticales detectadas.
-    
-    Returns:
-        Una lista de imágenes segmentadas.
-    """
-
-    columnas_segmentadas = []
-    if not lineas_verticales:
-        return columnas_segmentadas
-
-    # Extraer las coordenadas 'x' únicas y ordenarlas
-    coordenadas_x = sorted(list(set([int(x) for x, _, _ in lineas_verticales])))
-
-    # Si sólo hay una línea vertical, segmentar la imagen en dos partes
-    if len(coordenadas_x) == 1:
-        x = coordenadas_x[0]
-        columna_izquierda = imagen_binarizada[:, :x]
-        columna_derecha = imagen_binarizada[:, x:]
-        if columna_izquierda.shape[1] > 0:
-            columnas_segmentadas.append(columna_izquierda)
-        if columna_derecha.shape[1] > 0:
-            columnas_segmentadas.append(columna_derecha)
-        return columnas_segmentadas
-
-    # La primera columna estará desde el borde izquierdo de la imagen hasta la primera línea
-    x_inicial_anterior = 0
-    x_final_primera = coordenadas_x[0]
-
-    if x_final_primera > x_inicial_anterior:
-        columna = imagen_binarizada[:, x_inicial_anterior:x_final_primera]
-        columnas_segmentadas.append(columna)
-        x_inicial_anterior = x_final_primera
-
-    for x_final in coordenadas_x[1:]:  # Comenzar desde el segundo valor
-        # Asegurarse de que la diferencia horizontal sea positiva
-        if x_final > x_inicial_anterior:
-            columna = imagen_binarizada[:, x_inicial_anterior:x_final]
-            columnas_segmentadas.append(columna)
-            x_inicial_anterior = x_final
-
-    if coordenadas_x:
-        x_inicial_ultima = coordenadas_x[-1]
-        columna_derecha = imagen_binarizada[:, x_inicial_ultima:imagen_binarizada.shape[1]]
-        if columna_derecha.shape[1] > 0:
-            columnas_segmentadas.append(columna_derecha)
-
-    # config = [
-    #     '--psm 6 -c tessedit_char_whitelist= abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZáéíóúüñÑÁÉÍÓÚ',
-    #     '--psm 6 -c tessedit_char_whitelist= SMLX',
-    #     '--psm 7 -c tessedit_char_whitelist= 0123456789',
-    #     '--psm 7 -c tessedit_char_whitelist= 0123456789/',
-    # ]
-
-    images = []
-
-    for i in range(len(columnas_segmentadas)):
-        cv2.imwrite(f"columna_{i}.jpg", columnas_segmentadas[i])
-        images.append(f"columna_{i}.jpg")
-
-    # leer_imagen_por_filas(images)
-
-    # for i in range(0, len(columnas_segmentadas)):
-    #     leer_imagen_por_filas(columnas_segmentadas[i], config[i])
-
-    print(f"Se segmentaron {len(columnas_segmentadas)} columnas de la imagen.")
-    
-    return columnas_segmentadas
 
 def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
 
@@ -405,7 +348,31 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
     for fila in filas_segmentadas:
         leer_imagen_completa_ai(fila, num_fila)
         num_fila += 1
-
+    
+    print(f"""Se han dado los siguientes productos:
+            Botellas -> {Botella}
+            Camisetas básicas:
+            - S: {Camiseta_basica_S}
+            - M: {Camiseta_basica_M}
+            - L: {Camiseta_basica_L}
+            - XL: {Camiseta_basica_XL}
+            - XXL: {Camiseta_basica_XXL}
+            Total: {Camiseta_basica_S + Camiseta_basica_M + Camiseta_basica_L + Camiseta_basica_XL + Camiseta_basica_XXL}
+            Camisetas Panther:
+            - S: {Camiseta_panther_S}
+            - M: {Camiseta_panther_M}
+            - L: {Camiseta_panther_L}
+            - XL: {Camiseta_panther_XL}
+            - XXL: {Camiseta_panther_XXL}
+            Total: {Camiseta_panther_S + Camiseta_panther_M + Camiseta_panther_L + Camiseta_panther_XL + Camiseta_panther_XXL}
+            Chaquetas:
+            - S: {Chaqueta_S}
+            - M: {Chaqueta_M}
+            - L: {Chaqueta_L}
+            - XL: {Chaqueta_XL}
+            - XXL: {Chaqueta_XXL}
+            Total: {Chaqueta_S + Chaqueta_M + Chaqueta_L + Chaqueta_XL + Chaqueta_XXL}
+            """)
     return filas_segmentadas
 
 seleccionar_archivo()
