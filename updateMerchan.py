@@ -177,6 +177,17 @@ def parsear_respuesta_gemini(respuesta, i):
         
     return None
 
+def actualizar_stock():
+    #TODO
+    global Camiseta_basica_S, Camiseta_basica_M, Camiseta_basica_L, Camiseta_basica_XL, Camiseta_basica_XXL
+    global Camiseta_panther_S, Camiseta_panther_M, Camiseta_panther_L, Camiseta_panther_XL, Camiseta_panther_XXL
+    global Chaqueta_S, Chaqueta_M, Chaqueta_L, Chaqueta_XL, Chaqueta_XXL
+    global Botella
+
+    key = os.getenv("DRIVE_API_KEY")
+
+    pass
+
 def leer_imagen_completa_ai(imagen, i):
     api_key = os.getenv("API_KEY")
     if not api_key:
@@ -222,7 +233,7 @@ def leer_imagen_completa_ai(imagen, i):
     response = chat.send_message(prompt)
 
     parsear_respuesta_gemini(response.text, i)
-    # print(f"\nRespuesta de Gemini para la fila {i}: {response.text}\n")
+    # actualizar_stock()
 
 # Inicializar variables globales para almacenar imágenes y líneas
 def mostrar_imagen(nombre_ventana, imagen):

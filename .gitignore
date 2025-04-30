@@ -3,3 +3,5 @@ assets/
 .venv-tf/
 __pycache__/
 .env
+client_secrets.json
+quickstart.py
