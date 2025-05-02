@@ -480,6 +480,7 @@ def actualizar_variables():
 
     sincronizar_inputs()
 
+    
 
 def sincronizar_inputs():
     """Actualiza los valores de los inputs basándose en las variables globales."""
