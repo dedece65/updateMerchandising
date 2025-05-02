@@ -42,13 +42,7 @@ def seleccionar_archivo():
     date = datetime.today().strftime("%d-%m-%Y")
     # ruta_archivo = "./assets/Escaneo_test_impresora.jpg"
     ruta_archivo = filedialog.askopenfilename(
-            title="Seleccionar archivo",
-            initialdir=os.path.expanduser("~"),
-            filetypes=[
-                ("All Files", "*.*"),
-                ("Image Files", "*.jpg;*.jpeg;*.png"),
-                ("PDF Files", "*.pdf"),
-            ]
+            title="Seleccionar archivo pdf",
         )
     if ruta_archivo:
         image = pdf2image.convert_from_path(ruta_archivo, dpi=300)
@@ -133,7 +127,7 @@ def parsear_respuesta_gemini(respuesta, i):
     if 3 <= len(elementos_limpios) <= 4:
         print(f"Fila {i} correcta, la información es: {elementos_limpios}, actualizando datos...\n")
         # Actualizar los datos según el producto
-        if len(elementos_limpios) == 4:
+        if len(elementos_limpios) == 4 and elementos_limpios[2] is int:
             if elementos_limpios[0] == "Camiseta básica":
                 if elementos_limpios[1] == "S":
                     Camiseta_basica_S += elementos_limpios[2]
@@ -167,12 +161,11 @@ def parsear_respuesta_gemini(respuesta, i):
                     Chaqueta_XL += elementos_limpios[2]
                 elif elementos_limpios[1] == "XXL":
                     Chaqueta_XXL += elementos_limpios[2]
-        elif len(elementos_limpios) == 3:
+        elif len(elementos_limpios) == 3 and elementos_limpios[1] is int:
             if elementos_limpios[0] == "Botella":
                 Botella += elementos_limpios[1]
             else:
                 print(f"Esta fila tiene un producto nuevo y hay que añadirlo a la base de datos, el producto es: {elementos_limpios[0]}\n")
-        
         return tuple(elementos_limpios)
         
     return None
