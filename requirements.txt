@@ -1,6 +1,8 @@
 numpy
-pytesseract
+pandas
 opencv-python
 Pillow
 pdf2image
-keras-ocr
+google.generativeai
+datetime
+dotenv

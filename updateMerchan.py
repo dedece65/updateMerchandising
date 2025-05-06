@@ -1,11 +1,10 @@
 from tkinter import filedialog
 import numpy as np
-import pytesseract as pyt ## OCR
+import pandas as pd
 import cv2 ## Tratamiento de imagenes
-import PIL as pw ## Tratamiento de imagenes
+
 import tkinter as tk ## GUI
 import pdf2image
-# import keras_ocr
 import os
 import google.generativeai as ai
 
@@ -21,16 +20,15 @@ root = tk.Tk()
 root.geometry("1000x1000")
 root.title("Modificar stock de merchandising")
 
-global Camiseta_basica_S, Camiseta_basica_M, Camiseta_basica_L, Camiseta_basica_XL, Camiseta_basica_XXL
-global Camiseta_panther_S, Camiseta_panther_M, Camiseta_panther_L, Camiseta_panther_XL, Camiseta_panther_XXL
-global Chaqueta_S, Chaqueta_M, Chaqueta_L, Chaqueta_XL, Chaqueta_XXL
-global Botella
+global Camiseta_basica_S, Camiseta_basica_M, Camiseta_basica_L, Camiseta_basica_XL, Camiseta_basica_XXL # B,C,D,E,F 10
+global Camiseta_panther_S, Camiseta_panther_M, Camiseta_panther_L, Camiseta_panther_XL, Camiseta_panther_XXL # B,C,D,E,F 15
+global Chaqueta_S, Chaqueta_M, Chaqueta_L, Chaqueta_XL, Chaqueta_XXL # B,C,D,E,F 5
+global Botella # C20
 
 Camiseta_basica_S = Camiseta_basica_M = Camiseta_basica_L = Camiseta_basica_XL = Camiseta_basica_XXL = 0
 Camiseta_panther_S = Camiseta_panther_M = Camiseta_panther_L = Camiseta_panther_XL = Camiseta_panther_XXL = 0
 Chaqueta_S = Chaqueta_M = Chaqueta_L = Chaqueta_XL = Chaqueta_XXL = 0
 Botella = 0
-
 
 def seleccionar_archivo():
     global ruta_archivo
@@ -53,7 +51,6 @@ def seleccionar_archivo():
     pre_procesar_imagen(ruta_archivo)
 
     return ruta_archivo
-
 
 def parsear_respuesta_gemini(respuesta, i):
     """
@@ -221,12 +218,6 @@ def leer_imagen_completa_ai(imagen, i):
     response = chat.send_message(prompt)
 
     parsear_respuesta_gemini(response.text, i)
-
-# Inicializar variables globales para almacenar imágenes y líneas
-def mostrar_imagen(nombre_ventana, imagen):
-    cv2.namedWindow(nombre_ventana, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(nombre_ventana, 1000, 1000)
-    cv2.imshow(nombre_ventana, imagen)
 
 # Pre-procesar la imagen: convertir a escala de grises, desenfocar, binarizar y detectar líneas
 # Esta función toma la ruta de la imagen y devuelve la imagen binarizada
@@ -478,9 +469,32 @@ def actualizar_variables():
 
     Botella = int(entry_botella.get())
 
-    sincronizar_inputs()
+    dataframe = pd.read_excel("./assets/STOCK_MERCHANDISING.xlsx")
 
-    
+    dataframe.iloc[8, 1] -= Camiseta_basica_S
+    dataframe.iloc[8, 2] -= Camiseta_basica_M
+    dataframe.iloc[8, 3] -= Camiseta_basica_L
+    dataframe.iloc[8, 4] -= Camiseta_basica_XL
+    dataframe.iloc[8, 5] -= Camiseta_basica_XXL
+
+    dataframe.iloc[13, 1] -= Camiseta_panther_S
+    dataframe.iloc[13, 2] -= Camiseta_panther_M
+    dataframe.iloc[13, 3] -= Camiseta_panther_L
+    dataframe.iloc[13, 4] -= Camiseta_panther_XL
+    dataframe.iloc[13, 5] -= Camiseta_panther_XXL
+
+    dataframe.iloc[3, 1] -= Chaqueta_S
+    dataframe.iloc[3, 2] -= Chaqueta_M
+    dataframe.iloc[3, 3] -= Chaqueta_L
+    dataframe.iloc[3, 4] -= Chaqueta_XL
+    dataframe.iloc[3, 5] -= Chaqueta_XXL
+
+    dataframe.iloc[18, 2] -= Botella
+
+    date = datetime.today().strftime("%d-%m-%Y")
+    dataframe.to_excel(f"./assets/STOCK_MERCHANDISING{date}.xlsx", index=False)
+
+    sincronizar_inputs()
 
 def sincronizar_inputs():
     """Actualiza los valores de los inputs basándose en las variables globales."""
