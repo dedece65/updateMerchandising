@@ -1,14 +1,14 @@
 from tkinter import filedialog
 import numpy as np
-import pytesseract as pyt ## OCR
+import pandas as pd
 import cv2 ## Tratamiento de imagenes
-import PIL as pw ## Tratamiento de imagenes
+
 import tkinter as tk ## GUI
 import pdf2image
-# import keras_ocr
 import os
 import google.generativeai as ai
 
+from datetime import datetime
 from dotenv import load_dotenv
 from PIL import Image ## GUI
 
@@ -20,43 +20,37 @@ root = tk.Tk()
 root.geometry("1000x1000")
 root.title("Modificar stock de merchandising")
 
-global Camiseta_basica_S, Camiseta_basica_M, Camiseta_basica_L, Camiseta_basica_XL, Camiseta_basica_XXL
-global Camiseta_panther_S, Camiseta_panther_M, Camiseta_panther_L, Camiseta_panther_XL, Camiseta_panther_XXL
-global Chaqueta_S, Chaqueta_M, Chaqueta_L, Chaqueta_XL, Chaqueta_XXL
-global Botella
+global Camiseta_basica_S, Camiseta_basica_M, Camiseta_basica_L, Camiseta_basica_XL, Camiseta_basica_XXL # B,C,D,E,F 10
+global Camiseta_panther_S, Camiseta_panther_M, Camiseta_panther_L, Camiseta_panther_XL, Camiseta_panther_XXL # B,C,D,E,F 15
+global Chaqueta_S, Chaqueta_M, Chaqueta_L, Chaqueta_XL, Chaqueta_XXL # B,C,D,E,F 5
+global Botella # C20
 
 Camiseta_basica_S = Camiseta_basica_M = Camiseta_basica_L = Camiseta_basica_XL = Camiseta_basica_XXL = 0
 Camiseta_panther_S = Camiseta_panther_M = Camiseta_panther_L = Camiseta_panther_XL = Camiseta_panther_XXL = 0
 Chaqueta_S = Chaqueta_M = Chaqueta_L = Chaqueta_XL = Chaqueta_XXL = 0
 Botella = 0
 
-## Seleccionamos el archivo
 def seleccionar_archivo():
     global ruta_archivo
-    ruta_archivo = "./assets/Escaneo_test_impresora.jpg"
-    # ruta_archivo = filedialog.askopenfilename(
-    #         title="Seleccionar archivo",
-    #         initialdir=os.path.expanduser("~"),
-    #         filetypes=[
-    #             ("All Files", "*.*"),
-    #             ("Image Files", "*.jpg;*.jpeg;*.png"),
-    #             ("PDF Files", "*.pdf"),
-    #         ]
-    #     )
-    # if ruta_archivo:
-    #     image = pdf2image.convert_from_path(ruta_archivo, dpi=300)
-    #     for image in image:
-    #         # Convertir la imagen a un formato compatible con PIL
-    #         image = image.convert("RGB")
-    #         # Guardar la imagen en un archivo temporal
-    #         ruta_archivo = "temp_image.jpg"
-    #         image.save(ruta_archivo, "JPEG")
+    
+    ruta_archivo = ""
+
+    date = datetime.today().strftime("%d-%m-%Y")
+    # ruta_archivo = "./assets/Escaneo_test_impresora.jpg"
+    ruta_archivo = filedialog.askopenfilename(
+            title="Seleccionar archivo pdf",
+        )
+    if ruta_archivo:
+        image = pdf2image.convert_from_path(ruta_archivo, dpi=300)
+        for image in image:
+            # Convertir la imagen a un formato compatible con PIL
+            image = image.convert("RGB")
+            # Guardar la imagen en un archivo temporal
+            ruta_archivo = f"{date}stock.jpg"
+            image.save(ruta_archivo, "JPEG")
     pre_procesar_imagen(ruta_archivo)
-    # img = Image.open(ruta_archivo)
-    # leer_imagen_completa_ai(ruta_archivo)
 
     return ruta_archivo
-
 
 def parsear_respuesta_gemini(respuesta, i):
     """
@@ -120,50 +114,63 @@ def parsear_respuesta_gemini(respuesta, i):
     
     # Si hay 3 o 4 elementos (dependiendo de si es ropa o no), devolver la tupla
     if 3 <= len(elementos_limpios) <= 4:
-        print(f"Fila {i} correcta, la información es: {elementos_limpios}, actualizando datos...\n")
+        print(f"Fila {i} correcta, la información es: {elementos_limpios}")
         # Actualizar los datos según el producto
         if len(elementos_limpios) == 4:
+            try:
+                cantidad = int(elementos_limpios[2])
+            except ValueError:
+                print(f"Fila {i}: Error al convertir la cantidad a entero. La cantidad es: {elementos_limpios[2]}\n")
+                return None
+            print("cantidad: ", elementos_limpios[2])
             if elementos_limpios[0] == "Camiseta básica":
                 if elementos_limpios[1] == "S":
-                    Camiseta_basica_S += elementos_limpios[2]
+                    Camiseta_basica_S += cantidad
                 elif elementos_limpios[1] == "M":
-                    Camiseta_basica_M += elementos_limpios[2]
+                    Camiseta_basica_M += cantidad
                 elif elementos_limpios[1] == "L":
-                    Camiseta_basica_L += elementos_limpios[2]
+                    Camiseta_basica_L += cantidad
                 elif elementos_limpios[1] == "XL":
-                    Camiseta_basica_XL += elementos_limpios[2]
+                    Camiseta_basica_XL += cantidad
                 elif elementos_limpios[1] == "XXL":
-                    Camiseta_basica_XXL += elementos_limpios[2]
-            if elementos_limpios[0] == "Camiseta panther":
+                    Camiseta_basica_XXL += cantidad
+            elif elementos_limpios[0] == "Camiseta panther":
                 if elementos_limpios[1] == "S":
-                    Camiseta_panther_S += elementos_limpios[2]
+                    Camiseta_panther_S += cantidad
                 elif elementos_limpios[1] == "M":
-                    Camiseta_panther_M += elementos_limpios[2]
+                    Camiseta_panther_M += cantidad
                 elif elementos_limpios[1] == "L":
-                    Camiseta_panther_L += elementos_limpios[2]
+                    Camiseta_panther_L += cantidad
                 elif elementos_limpios[1] == "XL":
-                    Camiseta_panther_XL += elementos_limpios[2]
+                    Camiseta_panther_XL += cantidad
                 elif elementos_limpios[1] == "XXL":
-                    Camiseta_panther_XXL += elementos_limpios[2]
-            if elementos_limpios[0] == "Chaqueta":
+                    Camiseta_panther_XXL += cantidad
+            elif elementos_limpios[0] == "Chaqueta":
                 if elementos_limpios[1] == "S":
-                    Chaqueta_S += elementos_limpios[2]
+                    Chaqueta_S += cantidad
                 elif elementos_limpios[1] == "M":
-                    Chaqueta_M += elementos_limpios[2]
+                    Chaqueta_M += cantidad
                 elif elementos_limpios[1] == "L":
-                    Chaqueta_L += elementos_limpios[2]
+                    Chaqueta_L += cantidad
                 elif elementos_limpios[1] == "XL":
-                    Chaqueta_XL += elementos_limpios[2]
+                    Chaqueta_XL += cantidad
                 elif elementos_limpios[1] == "XXL":
-                    Chaqueta_XXL += elementos_limpios[2]
+                    Chaqueta_XXL += cantidad
+            elif elementos_limpios[0] == "Botella":
+                Botella += cantidad
         elif len(elementos_limpios) == 3:
+            try:
+                cantidad = int(elementos_limpios[1])
+            except ValueError:
+                print(f"Fila {i}: Error al convertir la cantidad a entero. La cantidad es: {elementos_limpios[2]}\n")
+                return None
             if elementos_limpios[0] == "Botella":
-                Botella += elementos_limpios[1]
+                Botella += cantidad
             else:
                 print(f"Esta fila tiene un producto nuevo y hay que añadirlo a la base de datos, el producto es: {elementos_limpios[0]}\n")
-        
+
         return tuple(elementos_limpios)
-        
+    
     return None
 
 def leer_imagen_completa_ai(imagen, i):
@@ -211,13 +218,6 @@ def leer_imagen_completa_ai(imagen, i):
     response = chat.send_message(prompt)
 
     parsear_respuesta_gemini(response.text, i)
-    # print(f"\nRespuesta de Gemini para la fila {i}: {response.text}\n")
-
-# Inicializar variables globales para almacenar imágenes y líneas
-def mostrar_imagen(nombre_ventana, imagen):
-    cv2.namedWindow(nombre_ventana, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(nombre_ventana, 1000, 1000)
-    cv2.imshow(nombre_ventana, imagen)
 
 # Pre-procesar la imagen: convertir a escala de grises, desenfocar, binarizar y detectar líneas
 # Esta función toma la ruta de la imagen y devuelve la imagen binarizada
@@ -349,32 +349,200 @@ def segmentar_imagenes(imagen_binarizada, lineas_horizontales):
         leer_imagen_completa_ai(fila, num_fila)
         num_fila += 1
     
-    print(f"""Se han dado los siguientes productos:
-            Botellas -> {Botella}
-            Camisetas básicas:
-            - S: {Camiseta_basica_S}
-            - M: {Camiseta_basica_M}
-            - L: {Camiseta_basica_L}
-            - XL: {Camiseta_basica_XL}
-            - XXL: {Camiseta_basica_XXL}
-            Total: {Camiseta_basica_S + Camiseta_basica_M + Camiseta_basica_L + Camiseta_basica_XL + Camiseta_basica_XXL}
-            Camisetas Panther:
-            - S: {Camiseta_panther_S}
-            - M: {Camiseta_panther_M}
-            - L: {Camiseta_panther_L}
-            - XL: {Camiseta_panther_XL}
-            - XXL: {Camiseta_panther_XXL}
-            Total: {Camiseta_panther_S + Camiseta_panther_M + Camiseta_panther_L + Camiseta_panther_XL + Camiseta_panther_XXL}
-            Chaquetas:
-            - S: {Chaqueta_S}
-            - M: {Chaqueta_M}
-            - L: {Chaqueta_L}
-            - XL: {Chaqueta_XL}
-            - XXL: {Chaqueta_XXL}
-            Total: {Chaqueta_S + Chaqueta_M + Chaqueta_L + Chaqueta_XL + Chaqueta_XXL}
-            """)
+    sincronizar_inputs()
+
     return filas_segmentadas
 
-seleccionar_archivo()
 
+# Botón para seleccionar archivo
+boton_seleccionar_archivo = tk.Button(root, text="Seleccionar archivo", command=seleccionar_archivo)
+boton_seleccionar_archivo.pack(pady=20)
+
+# Inputs para los productos
+label_camiseta_basica_S = tk.Label(root, text="Camisetas talla básica S")
+label_camiseta_basica_S.pack()
+entry_camiseta_basica_S = tk.Entry(root)
+entry_camiseta_basica_S.insert(0, str(Camiseta_basica_S))
+entry_camiseta_basica_S.pack()
+label_camiseta_basica_M = tk.Label(root, text="Camisetas talla básica M")
+label_camiseta_basica_M.pack()
+entry_camiseta_basica_M = tk.Entry(root)
+entry_camiseta_basica_M.insert(0, str(Camiseta_basica_M))
+entry_camiseta_basica_M.pack()
+label_camiseta_basica_L = tk.Label(root, text="Camisetas talla básica L")
+label_camiseta_basica_L.pack()
+entry_camiseta_basica_L = tk.Entry(root)
+entry_camiseta_basica_L.insert(0, str(Camiseta_basica_L))
+entry_camiseta_basica_L.pack()
+label_camiseta_basica_XL = tk.Label(root, text="Camisetas talla básica XL")
+label_camiseta_basica_XL.pack()
+entry_camiseta_basica_XL = tk.Entry(root)
+entry_camiseta_basica_XL.insert(0, str(Camiseta_basica_XL))
+entry_camiseta_basica_XL.pack()
+label_camiseta_basica_XXL = tk.Label(root, text="Camisetas talla básica XXL")
+label_camiseta_basica_XXL.pack()
+entry_camiseta_basica_XXL = tk.Entry(root)
+entry_camiseta_basica_XXL.insert(0, str(Camiseta_basica_XXL))
+entry_camiseta_basica_XXL.pack()
+
+label_camiseta_panther_S = tk.Label(root, text="Camisetas talla panther S")
+label_camiseta_panther_S.pack()
+entry_camiseta_panther_S = tk.Entry(root)
+entry_camiseta_panther_S.insert(0, str(Camiseta_panther_S))
+entry_camiseta_panther_S.pack()
+label_camiseta_panther_M = tk.Label(root, text="Camisetas talla panther M")
+label_camiseta_panther_M.pack()
+entry_camiseta_panther_M = tk.Entry(root)
+entry_camiseta_panther_M.insert(0, str(Camiseta_panther_M))
+entry_camiseta_panther_M.pack()
+label_camiseta_panther_L = tk.Label(root, text="Camisetas talla panther L")
+label_camiseta_panther_L.pack()
+entry_camiseta_panther_L = tk.Entry(root)
+entry_camiseta_panther_L.insert(0, str(Camiseta_panther_L))
+entry_camiseta_panther_L.pack()
+label_camiseta_panther_XL = tk.Label(root, text="Camisetas talla panther XL")
+label_camiseta_panther_XL.pack()
+entry_camiseta_panther_XL = tk.Entry(root)
+entry_camiseta_panther_XL.insert(0, str(Camiseta_panther_XL))
+entry_camiseta_panther_XL.pack()
+label_camiseta_panther_XXL = tk.Label(root, text="Camisetas talla panther XXL")
+label_camiseta_panther_XXL.pack()
+entry_camiseta_panther_XXL = tk.Entry(root)
+entry_camiseta_panther_XXL.insert(0, str(Camiseta_panther_XXL))
+entry_camiseta_panther_XXL.pack()
+
+label_chaqueta_S = tk.Label(root, text="Chaquetas talla S")
+label_chaqueta_S.pack()
+entry_chaqueta_S = tk.Entry(root)
+entry_chaqueta_S.insert(0, str(Chaqueta_S))
+entry_chaqueta_S.pack()
+label_chaqueta_M = tk.Label(root, text="Chaquetas talla M")
+label_chaqueta_M.pack()
+entry_chaqueta_M = tk.Entry(root)
+entry_chaqueta_M.insert(0, str(Chaqueta_M))
+entry_chaqueta_M.pack()
+label_chaqueta_L = tk.Label(root, text="Chaquetas talla L")
+label_chaqueta_L.pack()
+entry_chaqueta_L = tk.Entry(root)
+entry_chaqueta_L.insert(0, str(Chaqueta_L))
+entry_chaqueta_L.pack()
+label_chaqueta_XL = tk.Label(root, text="Chaquetas talla XL")
+label_chaqueta_XL.pack()
+entry_chaqueta_XL = tk.Entry(root)
+entry_chaqueta_XL.insert(0, str(Chaqueta_XL))
+entry_chaqueta_XL.pack()
+label_chaqueta_XXL = tk.Label(root, text="Chaquetas talla XXL")
+label_chaqueta_XXL.pack()
+entry_chaqueta_XXL = tk.Entry(root)
+entry_chaqueta_XXL.insert(0, str(Chaqueta_XXL))
+entry_chaqueta_XXL.pack()
+
+label_botella = tk.Label(root, text="Botellas")
+label_botella.pack()
+entry_botella = tk.Entry(root)
+entry_botella.insert(0, str(Botella))
+entry_botella.pack()
+
+def actualizar_variables():
+    global Camiseta_basica_S, Camiseta_basica_M, Camiseta_basica_L, Camiseta_basica_XL, Camiseta_basica_XXL
+    global Camiseta_panther_S, Camiseta_panther_M, Camiseta_panther_L, Camiseta_panther_XL, Camiseta_panther_XXL
+    global Chaqueta_S, Chaqueta_M, Chaqueta_L, Chaqueta_XL, Chaqueta_XXL
+    global Botella
+
+    Camiseta_basica_S = int(entry_camiseta_basica_S.get())
+    Camiseta_basica_M = int(entry_camiseta_basica_M.get())
+    Camiseta_basica_L = int(entry_camiseta_basica_L.get())
+    Camiseta_basica_XL = int(entry_camiseta_basica_XL.get())
+    Camiseta_basica_XXL = int(entry_camiseta_basica_XXL.get())
+
+    Camiseta_panther_S = int(entry_camiseta_panther_S.get())
+    Camiseta_panther_M = int(entry_camiseta_panther_M.get())
+    Camiseta_panther_L = int(entry_camiseta_panther_L.get())
+    Camiseta_panther_XL = int(entry_camiseta_panther_XL.get())
+    Camiseta_panther_XXL = int(entry_camiseta_panther_XXL.get())
+
+    Chaqueta_S = int(entry_chaqueta_S.get())
+    Chaqueta_M = int(entry_chaqueta_M.get())
+    Chaqueta_L = int(entry_chaqueta_L.get())
+    Chaqueta_XL = int(entry_chaqueta_XL.get())
+    Chaqueta_XXL = int(entry_chaqueta_XXL.get())
+
+    Botella = int(entry_botella.get())
+
+    dataframe = pd.read_excel("./assets/STOCK_MERCHANDISING.xlsx")
+
+    dataframe.iloc[8, 1] -= Camiseta_basica_S
+    dataframe.iloc[8, 2] -= Camiseta_basica_M
+    dataframe.iloc[8, 3] -= Camiseta_basica_L
+    dataframe.iloc[8, 4] -= Camiseta_basica_XL
+    dataframe.iloc[8, 5] -= Camiseta_basica_XXL
+
+    dataframe.iloc[13, 1] -= Camiseta_panther_S
+    dataframe.iloc[13, 2] -= Camiseta_panther_M
+    dataframe.iloc[13, 3] -= Camiseta_panther_L
+    dataframe.iloc[13, 4] -= Camiseta_panther_XL
+    dataframe.iloc[13, 5] -= Camiseta_panther_XXL
+
+    dataframe.iloc[3, 1] -= Chaqueta_S
+    dataframe.iloc[3, 2] -= Chaqueta_M
+    dataframe.iloc[3, 3] -= Chaqueta_L
+    dataframe.iloc[3, 4] -= Chaqueta_XL
+    dataframe.iloc[3, 5] -= Chaqueta_XXL
+
+    dataframe.iloc[18, 2] -= Botella
+
+    date = datetime.today().strftime("%d-%m-%Y")
+    dataframe.to_excel(f"./assets/STOCK_MERCHANDISING{date}.xlsx", index=False)
+
+    sincronizar_inputs()
+
+def sincronizar_inputs():
+    """Actualiza los valores de los inputs basándose en las variables globales."""
+    entry_camiseta_basica_S.delete(0, tk.END)
+    entry_camiseta_basica_S.insert(0, str(Camiseta_basica_S))
+    entry_camiseta_basica_M.delete(0, tk.END)
+    entry_camiseta_basica_M.insert(0, str(Camiseta_basica_M))
+    entry_camiseta_basica_L.delete(0, tk.END)
+    entry_camiseta_basica_L.insert(0, str(Camiseta_basica_L))
+    entry_camiseta_basica_XL.delete(0, tk.END)
+    entry_camiseta_basica_XL.insert(0, str(Camiseta_basica_XL))
+    entry_camiseta_basica_XXL.delete(0, tk.END)
+    entry_camiseta_basica_XXL.insert(0, str(Camiseta_basica_XXL))
+
+    entry_camiseta_panther_S.delete(0, tk.END)
+    entry_camiseta_panther_S.insert(0, str(Camiseta_panther_S))
+    entry_camiseta_panther_M.delete(0, tk.END)
+    entry_camiseta_panther_M.insert(0, str(Camiseta_panther_M))
+    entry_camiseta_panther_L.delete(0, tk.END)
+    entry_camiseta_panther_L.insert(0, str(Camiseta_panther_L))
+    entry_camiseta_panther_XL.delete(0, tk.END)
+    entry_camiseta_panther_XL.insert(0, str(Camiseta_panther_XL))
+    entry_camiseta_panther_XXL.delete(0, tk.END)
+    entry_camiseta_panther_XXL.insert(0, str(Camiseta_panther_XXL))
+
+    entry_chaqueta_S.delete(0, tk.END)
+    entry_chaqueta_S.insert(0, str(Chaqueta_S))
+    entry_chaqueta_M.delete(0, tk.END)
+    entry_chaqueta_M.insert(0, str(Chaqueta_M))
+    entry_chaqueta_L.delete(0, tk.END)
+    entry_chaqueta_L.insert(0, str(Chaqueta_L))
+    entry_chaqueta_XL.delete(0, tk.END)
+    entry_chaqueta_XL.insert(0, str(Chaqueta_XL))
+    entry_chaqueta_XXL.delete(0, tk.END)
+    entry_chaqueta_XXL.insert(0, str(Chaqueta_XXL))
+
+    entry_botella.delete(0, tk.END)
+    entry_botella.insert(0, str(Botella))
+
+    print(f"Se han actualizado los siguientes valores:\n Camiseta basica s: {Camiseta_basica_S}, Camiseta panther xxl: {Camiseta_panther_XXL}, Botellas: {Botella}, Chaqueta L: {Chaqueta_L}")
+
+# Botón para actualizar stock
+boton_actualizar_stock = tk.Button(root, text="Actualizar stock", command=actualizar_variables)
+boton_actualizar_stock.pack(pady=20)
+
+# Botón para salir
+boton_salir = tk.Button(root, text="Salir", command=root.quit)
+boton_salir.pack(pady=20)
+
+# Mostrar la ventana
 root.mainloop()

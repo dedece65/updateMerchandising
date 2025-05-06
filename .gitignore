@@ -3,3 +3,10 @@ assets/
 .venv-tf/
 __pycache__/
 .env
+client_secrets.json
+quickstart.py
+*.pdf
+*.jpg
+*.jpeg
+*.png
+.DS_Store
