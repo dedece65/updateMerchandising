@@ -1,26 +1,26 @@
-# Merchandise Inventory Update Tool
+# Herramienta de Actualización de Inventario de Mercancía
 
-## Introduction
+## Introducción
 
-This application automates the process of updating merchandise inventory from scanned forms. It uses computer vision techniques and Google's Gemini AI to extract data from PDF documents containing merchandise stock information. The tool processes tables from these documents, identifies product items, sizes, and quantities, and updates an Excel inventory spreadsheet accordingly.
+Esta aplicación automatiza el proceso de actualización del inventario de mercancía a partir de formularios escaneados. Utiliza técnicas de visión por computadora y Google Gemini AI para extraer datos de documentos PDF que contienen información de stock de mercancía. La herramienta procesa tablas de estos documentos, identifica artículos, tallas y cantidades, y actualiza una hoja de cálculo de Excel con el inventario correspondiente.
 
-## Features
+## Características
 
-- **PDF Document Processing**: Convert PDF documents to images for processing
-- **Image Segmentation**: Automatically detect and extract table rows using computer vision
-- **AI-Powered Data Extraction**: Uses Google's Gemini AI to interpret the content of each row
-- **Inventory Tracking**: Automatically updates the inventory for:
-  - Basic T-shirts (S, M, L, XL, XXL)
-  - Panther T-shirts (S, M, L, XL, XXL)
-  - Jackets (S, M, L, XL, XXL)
-  - Bottles
-- **Visual Interface**: Simple GUI for selecting files and viewing/editing inventory changes
-- **Excel Integration**: Updates Excel spreadsheets with the latest inventory counts
+- **Procesamiento de Documentos PDF**: Convierte documentos PDF a imágenes para su procesamiento
+- **Segmentación de Imágenes**: Detecta y extrae automáticamente filas de tablas usando visión por computadora
+- **Extracción de Datos Potenciada por IA**: Utiliza Google Gemini AI para interpretar el contenido de cada fila
+- **Seguimiento de Inventario**: Actualiza automáticamente el inventario para:
+  - Camisetas básicas (S, M, L, XL, XXL)
+  - Camisetas Panther (S, M, L, XL, XXL)
+  - Chaquetas (S, M, L, XL, XXL)
+  - Botellas
+- **Interfaz Visual**: GUI simple para seleccionar archivos y ver/editar cambios en el inventario
+- **Integración con Excel**: Actualiza hojas de cálculo Excel con los conteos de inventario más recientes
 
-## Requirements
+## Requisitos
 
-- Python 3.6 or higher
-- Python packages (see requirements.txt):
+- Python 3.6 o superior
+- Paquetes de Python (ver requirements.txt):
   - numpy
   - pandas
   - opencv-python
@@ -29,68 +29,67 @@ This application automates the process of updating merchandise inventory from sc
   - google.generativeai
   - python-dotenv
   - openpyxl
-- Google Gemini API key
-- Appropriate directory structure with an `assets` folder containing `STOCK_MERCHANDISING.xlsx`
+- Clave API de Google Gemini
+- Estructura de directorios apropiada con una carpeta `assets` que contenga `STOCK_MERCHANDISING.xlsx`
 
-## Installation
+## Instalación
 
-1. Clone this repository:
+1. Clona este repositorio:
    ```
    git clone https://github.com/yourusername/updateMerchandising.git
    cd updateMerchandising
    ```
 
-2. Create and activate a virtual environment (recommended):
+2. Crea y activa un entorno virtual (recomendado):
    ```
    python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   source .venv/bin/activate  # En Windows: .venv\Scripts\activate
    ```
 
-3. Install the required packages:
+3. Instala los paquetes requeridos:
    ```
    pip install -r requirements.txt
    ```
 
-4. Create a `.env` file in the project root with your Google Gemini API key:
+4. Crea un archivo `.env` en la raíz del proyecto con tu clave API de Google Gemini:
    ```
    API_KEY=your_gemini_api_key_here
    ```
 
-5. Create an `assets` folder with your inventory spreadsheet:
+5. Crea una carpeta `assets` con tu hoja de cálculo de inventario:
    ```
    mkdir -p assets
-   # Add your STOCK_MERCHANDISING.xlsx file to the assets folder
+   # Añade tu archivo STOCK_MERCHANDISING.xlsx a la carpeta assets
    ```
 
-## Usage
+## Uso
 
-1. Run the application:
+1. Ejecuta la aplicación:
    ```
    python updateMerchan.py
    ```
 
-2. Use the GUI to:
-   - Click "Seleccionar archivo" to select a PDF document containing inventory update information
-   - Review the extracted quantities in the input fields
-   - Adjust values manually if needed
-   - Click "Actualizar stock" to update the inventory spreadsheet
-   - A new Excel file will be created in the assets folder with the current date in its filename
+2. Usa la GUI para:
+   - Haz clic en "Seleccionar archivo" para seleccionar un documento PDF que contenga información de actualización de inventario
+   - Revisa las cantidades extraídas en los campos de entrada
+   - Ajusta los valores manualmente si es necesario
+   - Haz clic en "Actualizar stock" para actualizar la hoja de cálculo de inventario
+   - Se creará un nuevo archivo Excel en la carpeta assets con la fecha actual en su nombre de archivo
 
-## How It Works
+## Cómo Funciona
 
-1. The application converts the selected PDF to an image
-2. Image processing techniques are used to detect horizontal lines that separate table rows
-3. Each row is processed by Google's Gemini AI to extract product information
-4. The extracted data updates the inventory counts shown in the GUI
-5. When "Actualizar stock" is clicked, the application reads the existing Excel file, applies the changes, and saves a new dated version
+1. La aplicación convierte el PDF seleccionado en una imagen
+2. Se utilizan técnicas de procesamiento de imágenes para detectar líneas horizontales que separan las filas de la tabla
+3. Cada fila es procesada por Google Gemini AI para extraer información del producto
+4. Los datos extraídos actualizan los conteos de inventario mostrados en la GUI
+5. Cuando se hace clic en "Actualizar stock", la aplicación lee el archivo Excel existente, aplica los cambios y guarda una nueva versión con fecha
 
-## Important Notes
+## Notas Importantes
 
-- You must obtain a Google Gemini API key to use this application. Visit [Google AI Studio](https://ai.google.dev/) to get a key.
-- The application expects a specific format for the input PDF documents (forms with tables containing merchandise information)
-- The Excel spreadsheet structure should match the expected format with product information at specific cell positions
+- Debes obtener una clave API de Google Gemini para usar esta aplicación. Visita [Google AI Studio](https://ai.google.dev/) para obtener una clave.
+- La aplicación espera un formato específico para los documentos PDF de entrada (formularios con tablas que contienen información de mercancía)
+- La estructura de la hoja de cálculo Excel debe coincidir con el formato esperado, con la información del producto en posiciones de celda específicas
 
-## License
+## Licencia
 
-This project is licensed under the terms of the LICENSE file included in this repository.
-
+Este proyecto está licenciado bajo los términos del archivo LICENSE incluido en este repositorio.
